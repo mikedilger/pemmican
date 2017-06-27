@@ -36,7 +36,7 @@ impl Handler for Slow {
         Box::new(
             pemmican.pool.spawn_fn(|| Ok( {
                 ::std::thread::sleep(::std::time::Duration::from_secs(3));
-                format!("This response delayed 3 seconds.\n")
+                "This response delayed 3 seconds.\n".to_owned()
             })).map(|x| {
                 Response::new().with_body(x)
             })
@@ -52,5 +52,7 @@ fn main()
         count: AtomicU64::new(0)
     });
     pemmican.add_route("/slow", Method::Get, Slow);
-    let _ = pemmican.run("127.0.0.1:3000");
+    let _ = pemmican.run("127.0.0.1:3000",
+                         futures::future::ok(()) // so that it completes immediately
+    );
 }

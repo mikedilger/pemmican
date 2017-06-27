@@ -36,7 +36,8 @@ impl Pemmican {
         self.routes.insert( (path.to_owned(),method), Box::new(handler) );
     }
 
-    pub fn run(self, addr: &str) -> Result<(), hyper::Error>
+    pub fn run<F>(self, addr: &str, shutdown_signal: F) -> Result<(), hyper::Error>
+        where F: Future<Item = (), Error = ()>
     {
         let arcself = Arc::new(self);
         let addr = addr.parse().unwrap(); // FIXME: when error type is generalized
@@ -44,7 +45,7 @@ impl Pemmican {
             .keep_alive(true) // FIXME: config setting keep_alive
             .bind(&addr, move|| Ok(arcself.clone()))?;
         server.shutdown_timeout(Duration::from_secs(1)); // FIXME: config shutdown_timeout
-        server.run_until(future::empty()) // FIXME: maybe add shutdown future parameter
+        server.run_until(shutdown_signal) // FIXME: maybe add shutdown future parameter
     }
 }
 
