@@ -45,7 +45,7 @@ impl Pemmican {
             .keep_alive(true) // FIXME: config setting keep_alive
             .bind(&addr, move|| Ok(arcself.clone()))?;
         server.shutdown_timeout(Duration::from_secs(1)); // FIXME: config shutdown_timeout
-        server.run_until(shutdown_signal) // FIXME: maybe add shutdown future parameter
+        server.run_until(shutdown_signal)
     }
 }
 
@@ -74,12 +74,5 @@ impl Service for Pemmican {
                 Response::new().with_status(StatusCode::NotFound)
             ))
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
     }
 }
