@@ -4,6 +4,9 @@ extern crate futures;
 extern crate futures_cpupool;
 extern crate chashmap;
 
+pub mod error;
+pub use error::Error;
+
 use chashmap::CHashMap;
 use futures::Future;
 use futures::future;
@@ -36,16 +39,16 @@ impl Pemmican {
         self.routes.insert( (path.to_owned(),method), Box::new(handler) );
     }
 
-    pub fn run<F>(self, addr: &str, shutdown_signal: F) -> Result<(), hyper::Error>
+    pub fn run<F>(self, addr: &str, shutdown_signal: F) -> Result<(), Error>
         where F: Future<Item = (), Error = ()>
     {
         let arcself = Arc::new(self);
-        let addr = addr.parse().unwrap(); // FIXME: when error type is generalized
+        let addr = addr.parse()?;
         let mut server = Http::new()
             .keep_alive(true) // FIXME: config setting keep_alive
             .bind(&addr, move|| Ok(arcself.clone()))?;
         server.shutdown_timeout(Duration::from_secs(1)); // FIXME: config shutdown_timeout
-        server.run_until(shutdown_signal)
+        server.run_until(shutdown_signal).map_err(|e| From::from(e))
     }
 }
 
@@ -58,7 +61,7 @@ impl Default for Pemmican {
 impl Service for Pemmican {
     type Request = Request;
     type Response = Response;
-    type Error = hyper::Error; // FIXME: generalize
+    type Error = ::hyper::Error;
     type Future = Box<Future<Item = Self::Response, Error = Self::Error>>;
 
     fn call(&self, req: Request) -> Self::Future {
