@@ -16,23 +16,27 @@ use hyper::{Method, StatusCode};
 use std::time::Duration;
 use std::sync::Arc;
 
-type Handler = fn(pemmican: &Pemmican, Request)
-                  -> Box<Future<Item = Response, Error = ::hyper::Error>>;
+type Handler<State> =
+    fn(pemmican: &Pemmican<State>, Request)
+       -> Box<Future<Item = Response, Error = ::hyper::Error>>;
 
-pub struct Pemmican {
+pub struct Pemmican<State: Send + Sync + 'static> {
     pub pool: CpuPool,
-    routes: CHashMap<(String, Method), Handler>,
+    routes: CHashMap<(String, Method), Handler<State>>,
+    #[allow(dead_code)] // this is provided for handlers; this library does not use it
+    state: State,
 }
 
-impl Pemmican {
-    pub fn new() -> Pemmican {
+impl<State: Send + Sync + 'static> Pemmican<State> {
+    pub fn new(initial_state: State) -> Pemmican<State> {
         Pemmican {
             pool: CpuPool::new(4), // FIXME, config setting num_threads
             routes: CHashMap::new(),
+            state: initial_state,
         }
     }
 
-    pub fn add_route(&mut self, path: &str, method: Method, handler: Handler)
+    pub fn add_route(&mut self, path: &str, method: Method, handler: Handler<State>)
     {
         self.routes.insert( (path.to_owned(),method), handler );
     }
@@ -50,13 +54,13 @@ impl Pemmican {
     }
 }
 
-impl Default for Pemmican {
+impl<State: Send + Sync + 'static + Default> Default for Pemmican<State> {
     fn default() -> Self {
-        Self::new()
+        Self::new(State::default())
     }
 }
 
-impl Service for Pemmican {
+impl<State: Send + Sync + 'static> Service for Pemmican<State> {
     type Request = Request;
     type Response = Response;
     type Error = ::hyper::Error;
