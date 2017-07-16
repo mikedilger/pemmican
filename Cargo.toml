@@ -1,9 +1,12 @@
 [package]
 name = "pemmican"
 version = "0.1.1-unstable"
-authors = ["Mike Dilger <mike@optcomp.nz>"]
 description = "Pemmican Web Framework"
-license-file = "LICENCE"
+authors = ["Mike Dilger <mike@optcomp.nz>"]
+readme = "README.md"
+repository = "https://github.com/mikedilger/pemmican"
+license = "MIT OR Apache-2.0"
+keywords = [ "webserver", "framework" ]
 
 [dependencies]
 hyper = "0.11"

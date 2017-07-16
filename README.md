@@ -19,11 +19,13 @@ mio, etc). This means that whenever a task is unable to continue right away,
 your processor cores can move on to something else, keeping them busy whenever
 any task is able to progress.
 
-Synchronous blocking I/O (the older/simpler way) has worker threads which
-blocked whenever something was not ready.  Because any number of threads might
-be blocked, you either to spawn up a new thread for every new task (not
-efficient), or you needed to accept that sometimes you would have useful work
-but no threads available to do it (also not efficient).
+    Synchronous blocking I/O (the simpler way) uses worker threads which will
+    block whenever something is not ready, and eventually you may run out of
+    threads, leaving your server idle, even when other tasks are ready to progress.
+    Because any number of threads might be blocked, you must either spawn up a
+    new thread for every new task (not efficient), or you need to accept that
+    sometimes you will have work ready to be done, but no threads available to do
+    it (also not efficient). Asynchronous I/O programming avoids these problems.
 
 In order to keep your cores busy whenever work becomes available, you must
 write your handler code to return futures, and you must be sure that your
