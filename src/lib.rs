@@ -20,18 +20,46 @@ pub type Handler<State> =
     fn(pemmican: &Pemmican<State>, Request)
        -> Box<Future<Item = Response, Error = ::hyper::Error>>;
 
+pub struct Config {
+    /// Number of threads for the CpuPool.  Note that handler functions are run on the
+    /// main thread, and you must use `pemmican.pool` if you want to run code on a
+    /// separate thread in the Pemmican CpuPool.  Defaults to 4.
+    num_threads: usize,
+
+    /// Configure the amount of time the server will wait for a "graceful shutdown".
+    /// This is the amount of time after the shutdown signal is received the server
+    /// will wait for all pending connections to finish. If the timeout elapses then
+    /// the server will be forcibly shut down.  Defaults to 1s.
+    shutdown_timeout: Duration,
+
+    /// Enable or disable Keep-alive.  Default is true.
+    keep_alive: bool,
+}
+
+impl Default for Config {
+    fn default() -> Config {
+        Config {
+            num_threads: 4,
+            shutdown_timeout: Duration::from_secs(1),
+            keep_alive: true,
+        }
+    }
+}
+
 pub struct Pemmican<State: Send + Sync + 'static> {
     routes: CHashMap<(String, Method), Handler<State>>,
     pub pool: CpuPool,
+    config: Config,
     #[allow(dead_code)] // this is provided for handlers; this library does not use it
     pub state: State,
 }
 
 impl<State: Send + Sync + 'static> Pemmican<State> {
-    pub fn new(initial_state: State) -> Pemmican<State> {
+    pub fn new(config: Config, initial_state: State) -> Pemmican<State> {
         Pemmican {
             routes: CHashMap::new(),
-            pool: CpuPool::new(4), // FIXME, config setting num_threads
+            pool: CpuPool::new(config.num_threads),
+            config: config,
             state: initial_state,
         }
     }
@@ -44,19 +72,22 @@ impl<State: Send + Sync + 'static> Pemmican<State> {
     pub fn run<F>(self, addr: &str, shutdown_signal: F) -> Result<(), Error>
         where F: Future<Item = (), Error = ()>
     {
+        let keep_alive = self.config.keep_alive;
+        let shutdown_timeout = self.config.shutdown_timeout;
+
         let arcself = Arc::new(self);
         let addr = addr.parse()?;
         let mut server = Http::new()
-            .keep_alive(true) // FIXME: config setting keep_alive
+            .keep_alive(keep_alive)
             .bind(&addr, move|| Ok(arcself.clone()))?;
-        server.shutdown_timeout(Duration::from_secs(1)); // FIXME: config shutdown_timeout
+        server.shutdown_timeout(shutdown_timeout);
         server.run_until(shutdown_signal).map_err(|e| From::from(e))
     }
 }
 
 impl<State: Send + Sync + 'static + Default> Default for Pemmican<State> {
     fn default() -> Self {
-        Self::new(State::default())
+        Self::new(Config::default(), State::default())
     }
 }
 
