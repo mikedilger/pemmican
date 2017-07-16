@@ -40,16 +40,3 @@ You define routes and add them dynamically.
 
 Pemmican features will be developed modularly, so you can use as much or as
 little as you wish.
-
-## THINGS TO FIX
-
-* Automate Multithreadedness:  We are currently requiring the consumer
-  handlers to use the thread pool, rather than running their future on it
-  for them.
-* Error type: hyper::Error is not right, we need to generalize in a way that
-  the consumer can extend.
-* TLS: see this thread: https://github.com/hyperium/hyper/issues/1025
-  and nayato's example (which may be out of date)
-* Config file needed:  Currently at least: num_threads, shutdown_timeout
-* Possibly fix cloning in impl Service for Pemmican
-* Extend
