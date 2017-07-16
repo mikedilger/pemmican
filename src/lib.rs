@@ -16,14 +16,12 @@ use hyper::{Method, StatusCode};
 use std::time::Duration;
 use std::sync::Arc;
 
-pub trait Handler: 'static + Send + Sync {
-    fn run(&self, pemmican: &Pemmican, request: Request)
-           -> Box<Future<Item = Response, Error = ::hyper::Error>>;
-}
+type Handler = fn(pemmican: &Pemmican, Request)
+                  -> Box<Future<Item = Response, Error = ::hyper::Error>>;
 
 pub struct Pemmican {
     pub pool: CpuPool,
-    routes: CHashMap<(String, Method), Box<Handler>>,
+    routes: CHashMap<(String, Method), Handler>,
 }
 
 impl Pemmican {
@@ -34,9 +32,9 @@ impl Pemmican {
         }
     }
 
-    pub fn add_route<H: Handler>(&mut self, path: &str, method: Method, handler: H)
+    pub fn add_route(&mut self, path: &str, method: Method, handler: Handler)
     {
-        self.routes.insert( (path.to_owned(),method), Box::new(handler) );
+        self.routes.insert( (path.to_owned(),method), handler );
     }
 
     pub fn run<F>(self, addr: &str, shutdown_signal: F) -> Result<(), Error>
@@ -71,7 +69,7 @@ impl Service for Pemmican {
         let method: Method = req.method().clone();
 
         if let Some(handler) = self.routes.get_mut( &(path,method) ) {
-            handler.run(self, req)
+            (handler)(self, req)
         } else {
             Box::new(future::ok(
                 Response::new().with_status(StatusCode::NotFound)
