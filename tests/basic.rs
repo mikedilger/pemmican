@@ -6,7 +6,7 @@ extern crate hyper;
 extern crate futures;
 
 use std::sync::atomic::{AtomicU64, Ordering};
-use pemmican::Pemmican;
+use pemmican::{Pemmican, Config};
 use hyper::server::{Request, Response};
 use hyper::Method;
 use futures::Future;
@@ -42,9 +42,12 @@ fn slow(pemmican: &Pemmican<State>, _request: Request)
 #[test]
 fn main()
 {
-    let mut pemmican = Pemmican::new(State {
-        count: AtomicU64::new(0)
-    });
+    let mut pemmican = Pemmican::new(
+        Config::default(),
+        State {
+            count: AtomicU64::new(0)
+        }
+    );
 
     pemmican.add_route("/", Method::Get, greet);
     pemmican.add_route("/slow", Method::Get, slow);
