@@ -16,8 +16,8 @@ use hyper::{Method, StatusCode};
 use std::time::Duration;
 use std::sync::Arc;
 
-pub type Handler<State> =
-    fn(pemmican: &Pemmican<State>, Request)
+pub type Handler<S> =
+    fn(pemmican: &Pemmican<S>, Request)
        -> Box<Future<Item = Response, Error = ::hyper::Error>>;
 
 pub struct Config {
@@ -46,16 +46,16 @@ impl Default for Config {
     }
 }
 
-pub struct Pemmican<State: Send + Sync + 'static> {
-    routes: CHashMap<(String, Method), Handler<State>>,
+pub struct Pemmican<S: Send + Sync + 'static> {
+    routes: CHashMap<(String, Method), Handler<S>>,
     pub pool: CpuPool,
     config: Config,
     #[allow(dead_code)] // this is provided for handlers; this library does not use it
-    pub state: State,
+    pub state: S,
 }
 
-impl<State: Send + Sync + 'static> Pemmican<State> {
-    pub fn new(config: Config, initial_state: State) -> Pemmican<State> {
+impl<S: Send + Sync + 'static> Pemmican<S> {
+    pub fn new(config: Config, initial_state: S) -> Pemmican<S> {
         Pemmican {
             routes: CHashMap::new(),
             pool: CpuPool::new(config.num_threads),
@@ -64,7 +64,7 @@ impl<State: Send + Sync + 'static> Pemmican<State> {
         }
     }
 
-    pub fn add_route(&mut self, path: &str, method: Method, handler: Handler<State>)
+    pub fn add_route(&mut self, path: &str, method: Method, handler: Handler<S>)
     {
         self.routes.insert( (path.to_owned(),method), handler );
     }
@@ -85,13 +85,13 @@ impl<State: Send + Sync + 'static> Pemmican<State> {
     }
 }
 
-impl<State: Send + Sync + 'static + Default> Default for Pemmican<State> {
+impl<S: Send + Sync + 'static + Default> Default for Pemmican<S> {
     fn default() -> Self {
-        Self::new(Config::default(), State::default())
+        Self::new(Config::default(), S::default())
     }
 }
 
-impl<State: Send + Sync + 'static> Service for Pemmican<State> {
+impl<S: Send + Sync + 'static> Service for Pemmican<S> {
     type Request = Request;
     type Response = Response;
     type Error = ::hyper::Error;
