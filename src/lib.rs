@@ -16,22 +16,22 @@ use hyper::{Method, StatusCode};
 use std::time::Duration;
 use std::sync::Arc;
 
-type Handler<State> =
+pub type Handler<State> =
     fn(pemmican: &Pemmican<State>, Request)
        -> Box<Future<Item = Response, Error = ::hyper::Error>>;
 
 pub struct Pemmican<State: Send + Sync + 'static> {
-    pub pool: CpuPool,
     routes: CHashMap<(String, Method), Handler<State>>,
+    pub pool: CpuPool,
     #[allow(dead_code)] // this is provided for handlers; this library does not use it
-    state: State,
+    pub state: State,
 }
 
 impl<State: Send + Sync + 'static> Pemmican<State> {
     pub fn new(initial_state: State) -> Pemmican<State> {
         Pemmican {
-            pool: CpuPool::new(4), // FIXME, config setting num_threads
             routes: CHashMap::new(),
+            pool: CpuPool::new(4), // FIXME, config setting num_threads
             state: initial_state,
         }
     }
