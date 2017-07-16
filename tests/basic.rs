@@ -53,6 +53,7 @@ fn main()
     pemmican.add_route("/slow", Method::Get, slow);
 
     let _ = pemmican.run("127.0.0.1:3000",
-                         futures::future::ok(()) // so that it completes immediately
+                         //futures::future::empty() // this runs indefinately
+                         futures::future::ok(()) // this completes immediately
     );
 }
