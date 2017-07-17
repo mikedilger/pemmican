@@ -3,6 +3,10 @@
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE-MIT)
 [![Apache-2.0 licensed](https://img.shields.io/badge/license-APACHE2-blue.svg)](./LICENSE-APACHE)
 
+[pemmican on crates.io](https://crates.io/crates/pemmican)
+
+[Documentation](https://docs.rs/pemmican)
+
 Pemmican is a Web server library built in top of [hyper](https://hyper.rs) for
 the Rust language.
 
