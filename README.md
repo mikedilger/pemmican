@@ -1,5 +1,8 @@
 # Pemmican
 
+[![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE-MIT)
+[![Apache-2.0 licensed](https://img.shields.io/badge/license-APACHE2-blue.svg)](./LICENSE-APACHE)
+
 Pemmican is a Web server library built in top of [hyper](https://hyper.rs) for
 the Rust language.
 
@@ -60,7 +63,7 @@ Pemmican lets you define the Error type you will use, as long as it is
 Pemmican lets you share global state between your handlers, as long as it is
 `Send + Sync + 'static`.
 
-### Example
+## Example
 
 ```Rust
 extern crate pemmican;
@@ -130,3 +133,23 @@ fn main() {
                          futures::future::empty());
 }
 ```
+
+## Other similar crates
+
+Other authors are also working towards similar goals.  Have a look at the
+following projects which also use asynchronous hyper to provide a web
+services:
+
+* [zircon](https://crates.io/crates/zicron)
+* [backtalk](https://crates.io/crates/backtalk)
+* [pronghorn](https://crates.io/crates/pronghorn)
+* [jsonrpc-http-server](https://crates.io/crates/jsonrpc-http-server)
+* As of July 2017, that is about it (there are 37 crates that depend on hyper 0.11,
+  and it seems only these 4 try to be a web server)
+
+Additionally consider these more mature frameworks running on synchronous
+hyper:
+
+* [iron](https://crates.io/crates/iron)
+* [rocket](https://crates.io/crates/rocket)
+* I'm sure there are others that I don't know about.
