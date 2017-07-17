@@ -25,7 +25,7 @@ use std::error::Error as StdError;
 /// error code and return a Response rather than an Error.
 ///
 /// A reference to pemmican will be supplied to the request, so that you have access
-/// to the services it provides (such as access to your state <S> and access to the
+/// to the services it provides (such as access to your state S and access to the
 /// thread pool).
 pub type Handler<S, E> =
     fn(pemmican: &Pemmican<S, E>, Request)
