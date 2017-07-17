@@ -17,10 +17,21 @@ use std::time::Duration;
 use std::sync::Arc;
 use std::error::Error as StdError;
 
+/// Handler functions handle web requests by generating a response. Code within
+/// these functions should take care not to block or call functions which may block.
+/// Instead, they should return futures immediately.
+///
+/// In the case of an error, if at all possible, respond to the client with a 5xx
+/// error code and return a Response rather than an Error.
+///
+/// A reference to pemmican will be supplied to the request, so that you have access
+/// to the services it provides (such as access to your state <S> and access to the
+/// thread pool).
 pub type Handler<S, E> =
     fn(pemmican: &Pemmican<S, E>, Request)
        -> Box<Future<Item = Response, Error = E>>;
 
+/// Configuration settings for a Pemmican server instance
 pub struct Config {
     /// Number of threads for the CpuPool.  Note that handler functions are run on the
     /// main thread, and you must use `pemmican.pool` if you want to run code on a
@@ -47,6 +58,7 @@ impl Default for Config {
     }
 }
 
+/// A Pemmican server instance.
 pub struct Pemmican<S: Send + Sync + 'static,
                     E: StdError + Send + Sync + 'static>
 {
@@ -61,6 +73,7 @@ impl<S: Send + Sync + 'static,
      E: StdError + Send + Sync + 'static>
     Pemmican<S, E>
 {
+    /// Create a new pemmican server instance
     pub fn new(config: Config, initial_state: S) -> Pemmican<S, E> {
         Pemmican {
             routes: CHashMap::new(),
@@ -70,11 +83,15 @@ impl<S: Send + Sync + 'static,
         }
     }
 
+    /// Add a route to the server.  Routes map a path and method onto a handler.
+    /// Currently, all routes must be defined and added prior to running the server.
     pub fn add_route(&mut self, path: &str, method: Method, handler: Handler<S, E>)
     {
         self.routes.insert( (path.to_owned(),method), handler );
     }
 
+    /// Run the server.  It will run until the `shutdown_signal` future completes.
+    /// You can use futures::future::empty() to run forever.
     pub fn run<F>(self, addr: &str, shutdown_signal: F) -> Result<(), Error>
         where F: Future<Item = (), Error = ()>
     {
