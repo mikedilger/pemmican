@@ -89,7 +89,7 @@ struct State {
     visits: Arc<Mutex<u32>>,
 }
 
-fn home(pemmican: &Pemmican<State, IoError>, _request: Request)
+fn home(pemmican: &Pemmican<State, IoError>, _request: &Request)
         -> Box<Future<Item = Response, Error = IoError>>
 {
     let visits = {
@@ -105,7 +105,7 @@ fn home(pemmican: &Pemmican<State, IoError>, _request: Request)
                     visits))))
 }
 
-fn slow(pemmican: &Pemmican<State, IoError>, _request: Request)
+fn slow(pemmican: &Pemmican<State, IoError>, _request: &Request)
         -> Box<Future<Item = Response, Error = IoError>>
 {
     Box::new(

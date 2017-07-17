@@ -33,7 +33,7 @@ use std::error::Error as StdError;
 /// to the services it provides (such as access to your state S and access to the
 /// thread pool).
 pub type Handler<S, E> =
-    fn(pemmican: &Pemmican<S, E>, Request)
+    fn(pemmican: &Pemmican<S, E>, &Request)
        -> Box<Future<Item = Response, Error = E>>;
 
 /// Configuration settings for a Pemmican server instance
@@ -141,7 +141,7 @@ impl<S: Send + Sync + 'static,
             Box::new(
                 // FIXME: once hyper deals with issue #1128 (slated for 0.12), rework
                 // this code.
-                (handler)(self, req).map_err(
+                (handler)(self, &req).map_err(
                     |e| hyper::Error::Io(::std::io::Error::new(::std::io::ErrorKind::Other, e))
                 )
             )

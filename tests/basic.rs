@@ -16,7 +16,7 @@ struct State {
 }
 
 
-fn greet(pemmican: &Pemmican<State, ::std::io::Error>, _request: Request)
+fn greet(pemmican: &Pemmican<State, ::std::io::Error>, _request: &Request)
          -> Box<Future<Item = Response, Error = ::std::io::Error>>
 {
     Box::new(
@@ -26,7 +26,7 @@ fn greet(pemmican: &Pemmican<State, ::std::io::Error>, _request: Request)
                         pemmican.state.count.fetch_add(1, Ordering::SeqCst) + 1))))
 }
 
-fn slow(pemmican: &Pemmican<State, ::std::io::Error>, _request: Request)
+fn slow(pemmican: &Pemmican<State, ::std::io::Error>, _request: &Request)
         -> Box<Future<Item = Response, Error = ::std::io::Error>>
 {
     Box::new(
