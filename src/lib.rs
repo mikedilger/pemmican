@@ -12,6 +12,9 @@ extern crate chashmap;
 pub mod error;
 pub use error::Error;
 
+pub mod plugins;
+pub use plugins::{Plugin, PluginData};
+
 use chashmap::CHashMap;
 use futures::Future;
 use futures::future;
@@ -63,28 +66,36 @@ impl Default for Config {
     }
 }
 
-/// A Pemmican server instance.
-pub struct Pemmican<S: Send + Sync + 'static,
-                    E: StdError + Send + Sync + 'static>
+/// A Shared component within Pemmican, accessible to plugins
+pub struct Shared<S: Send + Sync>
 {
-    routes: CHashMap<(String, Method), Handler<S, E>>,
     pub pool: CpuPool,
-    config: Config,
     #[allow(dead_code)] // this is provided for handlers; this library does not use it
     pub state: S,
 }
 
-impl<S: Send + Sync + 'static,
-     E: StdError + Send + Sync + 'static>
-    Pemmican<S, E>
+/// A Pemmican server instance.
+pub struct Pemmican<S: Send + Sync, E>
+{
+    routes: CHashMap<(String, Method), Handler<S, E>>,
+    pub config: Config,
+    plugins: Vec<Arc<Plugin<S, E>>>,
+    pub shared: Arc<Shared<S>>,
+}
+
+impl<S: Send + Sync + 'static, E: Send + Sync + StdError + 'static> Pemmican<S, E>
 {
     /// Create a new pemmican server instance
     pub fn new(config: Config, initial_state: S) -> Pemmican<S, E> {
+        let num_threads = config.num_threads;
         Pemmican {
             routes: CHashMap::new(),
-            pool: CpuPool::new(config.num_threads),
             config: config,
-            state: initial_state,
+            plugins: Vec::new(),
+            shared: Arc::new(Shared {
+                pool: CpuPool::new(num_threads),
+                state: initial_state,
+            })
         }
     }
 
@@ -93,6 +104,13 @@ impl<S: Send + Sync + 'static,
     pub fn add_route(&mut self, path: &str, method: Method, handler: Handler<S, E>)
     {
         self.routes.insert( (path.to_owned(),method), handler );
+    }
+
+    /// Plug in a plugin.
+    /// Currently we have not yet implemented methods to order or re-order these.
+    pub fn plug_in(&mut self, plugin: Arc<Plugin<S, E>>)
+    {
+        self.plugins.push(plugin);
     }
 
     /// Run the server.  It will run until the `shutdown_signal` future completes.
@@ -113,38 +131,62 @@ impl<S: Send + Sync + 'static,
     }
 }
 
-impl<S: Send + Sync + 'static + Default,
-     E: StdError + Send + Sync + 'static>
-    Default for Pemmican<S, E>
+impl<S: Send + Sync + Default + 'static, E: Send + Sync + StdError + 'static> Default for Pemmican<S, E>
 {
     fn default() -> Self {
         Self::new(Config::default(), S::default())
     }
 }
 
-impl<S: Send + Sync + 'static,
-     E: StdError + Send + Sync + 'static>
-    Service for Pemmican<S, E>
+impl<S: Send + Sync + 'static, E: Send + Sync + StdError + 'static> Service for Pemmican<S, E>
 {
     type Request = Request;
     type Response = Response;
     type Error = ::hyper::Error;
     type Future = Box<Future<Item = Self::Response, Error = Self::Error>>;
 
-    fn call(&self, req: Request) -> Self::Future {
+    fn call(&self, mut req: Request) -> Self::Future {
         // FIXME: we are cloning these due to HashMap get requiring a reference
         // and the issues with borrowing. Research ways to avoid this.
         let path = req.path().to_owned();
         let method: Method = req.method().clone();
 
         if let Some(handler) = self.routes.get_mut( &(path,method) ) {
-            Box::new(
-                // FIXME: once hyper deals with issue #1128 (slated for 0.12), rework
-                // this code.
-                (handler)(self, &req).map_err(
-                    |e| hyper::Error::Io(::std::io::Error::new(::std::io::ErrorKind::Other, e))
-                )
-            )
+
+            // Run plugins before_handlers
+            for m in &self.plugins {
+                m.before_handler(&mut req);
+            }
+
+            let shared = self.shared.clone();
+
+            // Call the handler
+            let mut fut: Box<Future<Item = PluginData<S>, Error = E>> =
+                Box::new(
+                    (handler)(self, &req)
+                        .map(move |response| {
+                            PluginData {
+                                shared: shared,
+                                request: req,
+                                response: response,
+                            }
+                        })
+                );
+
+            // Call each plugin, modifying the future each time
+            for m in &self.plugins {
+                fut = Box::new( m.after_handler(fut) );
+            }
+
+            // Map the future back to just a response
+            let fut = Box::new( fut.map(|plugin_data| plugin_data.response) );
+
+            // Map the error back to hyper error
+            // FIXME: once hyper deals with issue #1128 (slated for 0.12), rework
+            // this code.
+            Box::new( fut.map_err(|e| {
+                hyper::Error::Io(::std::io::Error::new(::std::io::ErrorKind::Other, e))
+            }))
         } else {
             Box::new(future::ok(
                 Response::new().with_status(StatusCode::NotFound)

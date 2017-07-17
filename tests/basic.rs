@@ -23,14 +23,14 @@ fn greet(pemmican: &Pemmican<State, ::std::io::Error>, _request: &Request)
         futures::future::ok(
             Response::new().with_body(
                 format!("This page has been accessed {} times.\n",
-                        pemmican.state.count.fetch_add(1, Ordering::SeqCst) + 1))))
+                        pemmican.shared.state.count.fetch_add(1, Ordering::SeqCst) + 1))))
 }
 
 fn slow(pemmican: &Pemmican<State, ::std::io::Error>, _request: &Request)
         -> Box<Future<Item = Response, Error = ::std::io::Error>>
 {
     Box::new(
-        pemmican.pool.spawn_fn(|| Ok( {
+        pemmican.shared.pool.spawn_fn(|| Ok( {
             ::std::thread::sleep(::std::time::Duration::from_secs(3));
             "This response delayed 3 seconds.\n".to_owned()
         })).map(|x| {
