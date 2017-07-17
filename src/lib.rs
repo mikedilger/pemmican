@@ -15,10 +15,11 @@ use hyper::server::{Http, Request, Response, Service};
 use hyper::{Method, StatusCode};
 use std::time::Duration;
 use std::sync::Arc;
+use std::error::Error as StdError;
 
-pub type Handler<S> =
-    fn(pemmican: &Pemmican<S>, Request)
-       -> Box<Future<Item = Response, Error = ::hyper::Error>>;
+pub type Handler<S, E> =
+    fn(pemmican: &Pemmican<S, E>, Request)
+       -> Box<Future<Item = Response, Error = E>>;
 
 pub struct Config {
     /// Number of threads for the CpuPool.  Note that handler functions are run on the
@@ -46,16 +47,21 @@ impl Default for Config {
     }
 }
 
-pub struct Pemmican<S: Send + Sync + 'static> {
-    routes: CHashMap<(String, Method), Handler<S>>,
+pub struct Pemmican<S: Send + Sync + 'static,
+                    E: StdError + Send + Sync + 'static>
+{
+    routes: CHashMap<(String, Method), Handler<S, E>>,
     pub pool: CpuPool,
     config: Config,
     #[allow(dead_code)] // this is provided for handlers; this library does not use it
     pub state: S,
 }
 
-impl<S: Send + Sync + 'static> Pemmican<S> {
-    pub fn new(config: Config, initial_state: S) -> Pemmican<S> {
+impl<S: Send + Sync + 'static,
+     E: StdError + Send + Sync + 'static>
+    Pemmican<S, E>
+{
+    pub fn new(config: Config, initial_state: S) -> Pemmican<S, E> {
         Pemmican {
             routes: CHashMap::new(),
             pool: CpuPool::new(config.num_threads),
@@ -64,7 +70,7 @@ impl<S: Send + Sync + 'static> Pemmican<S> {
         }
     }
 
-    pub fn add_route(&mut self, path: &str, method: Method, handler: Handler<S>)
+    pub fn add_route(&mut self, path: &str, method: Method, handler: Handler<S, E>)
     {
         self.routes.insert( (path.to_owned(),method), handler );
     }
@@ -85,13 +91,19 @@ impl<S: Send + Sync + 'static> Pemmican<S> {
     }
 }
 
-impl<S: Send + Sync + 'static + Default> Default for Pemmican<S> {
+impl<S: Send + Sync + 'static + Default,
+     E: StdError + Send + Sync + 'static>
+    Default for Pemmican<S, E>
+{
     fn default() -> Self {
         Self::new(Config::default(), S::default())
     }
 }
 
-impl<S: Send + Sync + 'static> Service for Pemmican<S> {
+impl<S: Send + Sync + 'static,
+     E: StdError + Send + Sync + 'static>
+    Service for Pemmican<S, E>
+{
     type Request = Request;
     type Response = Response;
     type Error = ::hyper::Error;
@@ -104,7 +116,13 @@ impl<S: Send + Sync + 'static> Service for Pemmican<S> {
         let method: Method = req.method().clone();
 
         if let Some(handler) = self.routes.get_mut( &(path,method) ) {
-            (handler)(self, req)
+            Box::new(
+                // FIXME: once hyper deals with issue #1128 (slated for 0.12), rework
+                // this code.
+                (handler)(self, req).map_err(
+                    |e| hyper::Error::Io(::std::io::Error::new(::std::io::ErrorKind::Other, e))
+                )
+            )
         } else {
             Box::new(future::ok(
                 Response::new().with_status(StatusCode::NotFound)
