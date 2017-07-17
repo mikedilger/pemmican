@@ -40,3 +40,45 @@ You define routes and add them dynamically.
 
 Pemmican features will be developed modularly, so you can use as much or as
 little as you wish.
+
+### Example
+
+```Rust
+extern crate pemmican;
+extern crate hyper;
+extern crate futures;
+
+use pemmican::{Pemmican, Config};
+use hyper::server::{Request, Response};
+use hyper::Method;
+use futures::Future;
+use std::io::Error as IoError;
+
+// Here is a structure where you can share global state, accessible to your
+// handler functions.  It must be `Send + Sync + 'static`
+struct State;
+
+// You can type-parameterize Pemmican with your State and any type that implements
+// `Error + Send + Sync + 'static' for your error type.
+fn home(pemmican: &Pemmican<State, IoError>, _request: Request)
+  -> Box<Future<Item = Response, Error = IoError>>
+{
+  Box::new(
+    futures::future::ok(
+      Response::new().with_body(
+        "Hello World!".to_owned())))
+}
+
+fn main()
+{
+  let mut pemmican = Pemmican::new(
+    Config::default(),
+    State
+  );
+
+  pemmican.add_route("/", Method::Get, home);
+
+  let _ = pemmican.run("127.0.0.1:3000",
+                       futures::future::empty());
+}
+```
