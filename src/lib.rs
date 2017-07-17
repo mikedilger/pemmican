@@ -1,3 +1,8 @@
+#![doc(html_root_url = "https://docs.rs/pemmican")]
+
+//! Pemmican is a Web server library built on top of hyper for the Rust language.
+//!
+//! Introductory documentation is at https://github.com/mikedilger/pemmican
 
 extern crate hyper;
 extern crate futures;
