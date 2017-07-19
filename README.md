@@ -67,6 +67,14 @@ Pemmican lets you define the Error type you will use, as long as it is
 Pemmican lets you share global state between your handlers, as long as it is
 `Send + Sync + 'static`.
 
+## Caveats and Warnings
+
+Pemmican is very new (it was started in June 2017), and is likely to undergo substantial
+changes. If you use it now, expect breaking changes.
+
+The plugin architecture is especially new, and very likely to break multiple times before
+it settles down.
+
 ## Example
 
 ```Rust
