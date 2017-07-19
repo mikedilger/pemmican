@@ -1,6 +1,6 @@
 [package]
 name = "pemmican"
-version = "0.1.3"
+version = "0.2.0"
 description = "Pemmican Web Framework"
 authors = ["Mike Dilger <mike@optcomp.nz>"]
 readme = "README.md"
