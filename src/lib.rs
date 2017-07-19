@@ -109,7 +109,7 @@ impl<S: Send + Sync + 'static,
             .keep_alive(keep_alive)
             .bind(&addr, move|| Ok(arcself.clone()))?;
         server.shutdown_timeout(shutdown_timeout);
-        server.run_until(shutdown_signal).map_err(|e| From::from(e))
+        server.run_until(shutdown_signal).map_err(From::from)
     }
 }
 
