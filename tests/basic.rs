@@ -1,29 +1,34 @@
 
-#![feature(integer_atomics)]
-
 extern crate pemmican;
 extern crate hyper;
 extern crate futures;
 
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Arc;
 use pemmican::{Pemmican, Config};
+use pemmican::plugins::PageVisits;
 use hyper::server::{Request, Response};
 use hyper::Method;
 use futures::Future;
 
 struct State {
-    count: AtomicU64,
+    page_visits: Arc<PageVisits>,
 }
 
-
-fn greet(pemmican: &Pemmican<State, ::std::io::Error>, _request: &Request)
+fn greet(pemmican: &Pemmican<State, ::std::io::Error>, request: &Request)
          -> Box<Future<Item = Response, Error = ::std::io::Error>>
 {
     Box::new(
         futures::future::ok(
-            Response::new().with_body(
-                format!("This page has been accessed {} times.\n",
-                        pemmican.shared.state.count.fetch_add(1, Ordering::SeqCst) + 1))))
+            if let Some(c) = pemmican.shared.state.page_visits.get( request.uri().as_ref() )
+            {
+                Response::new().with_body(
+                    format!("This page has been accessed {} times.\n", c))
+            } else {
+                Response::new().with_body(
+                    format!("We dont know how many times this page has been accessed.\n"))
+            }
+        )
+    )
 }
 
 fn slow(pemmican: &Pemmican<State, ::std::io::Error>, _request: &Request)
@@ -42,12 +47,16 @@ fn slow(pemmican: &Pemmican<State, ::std::io::Error>, _request: &Request)
 #[test]
 fn main()
 {
+    let page_visits = Arc::new(PageVisits::new());
+
     let mut pemmican = Pemmican::new(
         Config::default(),
         State {
-            count: AtomicU64::new(0)
+            page_visits: page_visits.clone(),
         }
     );
+
+    pemmican.plug_in( page_visits.clone() );
 
     pemmican.add_route("/", Method::Get, greet);
     pemmican.add_route("/slow", Method::Get, slow);

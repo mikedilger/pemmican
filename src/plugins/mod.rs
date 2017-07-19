@@ -42,3 +42,6 @@ impl<'a, S: Send + Sync + 'static, E: 'static, T: Send + Sync + Plugin<S,E>>
         (*self).after_handler(future)
     }
 }
+
+pub mod page_visits;
+pub use self::page_visits::PageVisits;
