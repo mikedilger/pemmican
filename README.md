@@ -50,8 +50,8 @@ maximally efficient.
 Pemmican is a rust library. It is generic, and does not define your website.
 You define routes and add them dynamically.
 
-Pemmican features will be developed modularly, so you can use as much or as
-little as you wish.
+Pemmican supports plugins, so that functionality can be added via separate crates,
+and more importantly so that functionality you don't want can be left out.
 
 Pemmican lets you configure various settings of the libraries it depends on,
 rather than choosing for you. This includes (as of this writing) `num_threads`,
