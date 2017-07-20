@@ -89,6 +89,8 @@ it settles down.
 
 [Example using a Plugin](tests/plugin.rs)
 
+[Example using DynamicRouter](tests/dynamic.rs)
+
 ## Other similar crates
 
 Other authors are also working towards similar goals.  Have a look at the
