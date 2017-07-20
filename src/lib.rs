@@ -85,7 +85,9 @@ pub struct Pemmican<S: Send + Sync, E>
     pub shared: Arc<Shared<S>>,
 }
 
-impl<S: Send + Sync + 'static, E: Send + Sync + StdError + 'static> Pemmican<S, E>
+impl<S, E> Pemmican<S, E>
+    where S: Send + Sync + 'static,
+          E: Send + Sync + StdError + 'static
 {
     /// Create a new pemmican server instance
     pub fn new(config: Config, router: Box<Router<S, E>>, initial_state: S)
@@ -128,7 +130,9 @@ impl<S: Send + Sync + 'static, E: Send + Sync + StdError + 'static> Pemmican<S, 
     }
 }
 
-impl<S: Send + Sync + 'static, E: Send + Sync + StdError + 'static> Service for Pemmican<S, E>
+impl<S, E> Service for Pemmican<S, E>
+    where S: Send + Sync + 'static,
+          E: Send + Sync + StdError + 'static
 {
     type Request = Request;
     type Response = Response;
