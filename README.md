@@ -12,40 +12,45 @@ the Rust language.
 
 ## Overview
 
+Pemmican is
+* fast (rust)
+* parallel (thread pool)
+* asynchronous (hyper 0.11 w/ futures)
+* modular (plugins)
+* not opinionated (configurable and general purpose)
+* lets you share global state
+
 ### Pemmican is fast
 
-Rust is a systems level language, and runs at about the same speed as the
-fastest compiled languages such as C and C++, with careful coding.
+Pemmican is written in rust, a systems level language that generates code that typically
+runs at about the same speed as the other fastest compiled languages available (such as C
+and C++).
 
-We attempt to minimize memory copies and any other source of slowness.
+We attempt to minimize memory allocation, eschew blocking I/O, and try to use the fastest
+algorithms available.  This is an ongoing effort.
+
+Performance testing remains to be done.
 
 ### Pemmican is parallel
 
-Pemmican provides a thread pool, so you can run each page handler on an existing
-thread, and run them in parallel.
+Pemmican provides a thread pool. You can choose to run your page handler logic on a
+pre-existing thread from the thread pool.
 
 ### Pemmican is asynchronous
 
 Pemmican uses the new asynchonous version of hyper, (based on tokio, futures,
 mio, etc). This means that whenever a task is unable to continue right away,
 your processor cores can move on to something else, keeping them busy whenever
-any task is able to progress.
-
-    Synchronous blocking I/O (the simpler way) uses worker threads which will
-    block whenever something is not ready, and eventually you may run out of
-    threads, leaving your server idle, even when other tasks are ready to progress.
-    Because any number of threads might be blocked, you must either spawn up a
-    new thread for every new task (not efficient), or you need to accept that
-    sometimes you will have work ready to be done, but no threads available to do
-    it (also not efficient). Asynchronous I/O programming avoids these problems.
+any task is able to progress, rather than sitting idle waiting for an event.
 
 In order to keep your cores busy whenever work becomes available, you must
-write your handler code to return futures, and you must be sure that your
-handlers do not call blocking functions.  If you are successful in that,
-you can run pemmican with one thread per hardware core, and know that it is
-maximally efficient.
+be sure that the Future your page handlers return is not calling into blocking I/O
+functions.  If any of them are, you can still use pemmican to great effect but
+you probably want to configure a much larger thread pool.  If you never call
+a blocking I/O call, then theoretically you should get maximum performace with
+one thread per core.
 
-### Pemmican is modular and configurable
+### Pemmican is modular
 
 Pemmican is a rust library. It is generic, and does not define your website.
 You define routes and add them dynamically.
@@ -53,16 +58,17 @@ You define routes and add them dynamically.
 Pemmican supports plugins, so that functionality can be added via separate crates,
 and more importantly so that functionality you don't want can be left out.
 
+### Pemmican is not opinionated
+
 Pemmican lets you configure various settings of the libraries it depends on,
 rather than choosing for you. This includes (as of this writing) `num_threads`,
-`shutdown_timeout`, and `keep_alive`.
-
-### Pemmican uses your error type
+`shutdown_timeout`, and `keep_alive`.  We aim to be as configurable as possible,
+only making choices when we absolutely must.
 
 Pemmican lets you define the Error type you will use, as long as it is
 `Error + Send + Sync + 'static`.
 
-### Pemmican lets you share state
+### Pemmican lets you share global state
 
 Pemmican lets you share global state between your handlers, as long as it is
 `Send + Sync + 'static`.
