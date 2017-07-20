@@ -8,14 +8,17 @@ use hyper::server::{Request, Response};
 use hyper::Method;
 use futures::Future;
 
-fn home(_pemmican: &Pemmican<(), ::std::io::Error>, _request: &Request)
-         -> Box<Future<Item = Response, Error = ::std::io::Error>>
+// This is our home page handler
+fn home(pemmican: &Pemmican<(), ::std::io::Error>, _request: &Request)
+        -> Box<Future<Item = Response, Error = ::std::io::Error>>
 {
     Box::new(
-        futures::future::ok(
-            Response::new().with_body(
-                format!("Hello World!"))
-        )
+        pemmican.shared.pool.spawn_fn(|| Ok( {
+            ::std::thread::sleep(::std::time::Duration::from_secs(3));
+            "This response delayed 3 seconds.\n".to_owned()
+        })).map(|x| {
+            Response::new().with_body(x)
+        })
     )
 }
 

@@ -77,74 +77,11 @@ it settles down.
 
 ## Example
 
-```Rust
-extern crate pemmican;
-extern crate hyper;
-extern crate futures;
+[Basic Example](tests/basic.rs)
 
-use pemmican::{Pemmican, Config};
-use hyper::server::{Request, Response};
-use hyper::Method;
-use futures::Future;
-use std::io::Error as IoError;
-use std::sync::{Arc, Mutex};
+[Example using ThreadPool](tests/slow.rs)
 
-// You can type-parameterize Pemmican with your State and any type that implements
-// `Error + Send + Sync + 'static` for your error type.
-// Here is a structure where you can share global state, accessible to your
-// handler functions.  It must be `Send + Sync + 'static`
-struct State {
-    visits: Arc<Mutex<u32>>,
-}
-
-fn home(pemmican: &Pemmican<State, IoError>, _request: &Request)
-        -> Box<Future<Item = Response, Error = IoError>>
-{
-    let visits = {
-        // You can access your state at pemmican.state
-        let mut visits = pemmican.state.visits.lock().unwrap();
-        *visits += 1;
-        *visits
-    };
-
-    Box::new(futures::future::ok(
-        Response::new().with_body(
-            format!("<html><body>This page has been visited {} times</body></html>",
-                    visits))))
-}
-
-fn slow(pemmican: &Pemmican<State, IoError>, _request: &Request)
-        -> Box<Future<Item = Response, Error = IoError>>
-{
-    Box::new(
-        // You can spawn long running pages (for example, any page that
-        // accesses a database) on a Pemmican-supplied task pool.  If you
-        // dont, they are run on the main thread and you get no parallelism.
-        pemmican.pool.spawn_fn(|| Ok( {
-            ::std::thread::sleep(::std::time::Duration::from_secs(3));
-            "<html><body>This response delayed 3 seconds, but \
-            other requests are still snappy!</body></html>".to_owned()
-        })).map(|x| {
-            Response::new().with_body(x)
-        })
-    )
-}
-
-fn main() {
-    let mut pemmican = Pemmican::new(
-        Config::default(),
-        State {
-            visits: Arc::new(Mutex::new(0)),
-        },
-    );
-
-    pemmican.add_route("/", Method::Get, home);
-    pemmican.add_route("/slow", Method::Get, slow);
-
-    let _ = pemmican.run("127.0.0.1:3000",
-                         futures::future::empty());
-}
-```
+[Example using a Plugin](tests/plugin.rs)
 
 ## Other similar crates
 
