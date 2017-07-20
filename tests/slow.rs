@@ -14,6 +14,9 @@ fn home(pemmican: &Pemmican<(), ::std::io::Error>, _request: &Request)
 {
     Box::new(
         pemmican.shared.pool.spawn_fn(|| Ok( {
+            // NOTE: this is not asynchronous programming! This call blocks. However, we
+            // are using it as a proxy for an actual non-blocking but long-running task,
+            // for example purposes only.
             ::std::thread::sleep(::std::time::Duration::from_secs(3));
             "This response delayed 3 seconds.\n".to_owned()
         })).map(|x| {
