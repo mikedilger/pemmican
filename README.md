@@ -10,6 +10,15 @@
 Pemmican is a Web server library built in top of [hyper](https://hyper.rs) for
 the Rust language.
 
+## Caveats and Warnings
+
+Pemmican is very new (it was started in June 2017), and is likely to undergo substantial
+changes. If you use it now, expect breaking changes. We expect it won't be generally useful
+until sometime after hyper 0.12 is released.
+
+The plugin architecture is especially new, quite limited at present, and very likely to break
+multiple times before it settles down.
+
 ## Overview
 
 Pemmican is
@@ -72,14 +81,6 @@ Pemmican lets you define the Error type you will use, as long as it is
 
 Pemmican lets you share global state between your handlers, as long as it is
 `Send + Sync + 'static`.
-
-## Caveats and Warnings
-
-Pemmican is very new (it was started in June 2017), and is likely to undergo substantial
-changes. If you use it now, expect breaking changes.
-
-The plugin architecture is especially new, and very likely to break multiple times before
-it settles down.
 
 ## Example
 
