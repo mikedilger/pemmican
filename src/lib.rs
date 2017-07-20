@@ -12,15 +12,17 @@ extern crate chashmap;
 pub mod error;
 pub use error::Error;
 
+pub mod router;
+pub use router::{Router, DynamicRouter};
+
 pub mod plugins;
 pub use plugins::{Plugin, PluginData};
 
-use chashmap::CHashMap;
 use futures::Future;
 use futures::future;
 use futures_cpupool::CpuPool;
 use hyper::server::{Http, Request, Response, Service};
-use hyper::{Method, StatusCode};
+use hyper::StatusCode;
 use std::time::Duration;
 use std::sync::Arc;
 use std::error::Error as StdError;
@@ -77,7 +79,7 @@ pub struct Shared<S: Send + Sync>
 /// A Pemmican server instance.
 pub struct Pemmican<S: Send + Sync, E>
 {
-    routes: CHashMap<(String, Method), Handler<S, E>>,
+    router: Box<Router<S, E>>,
     pub config: Config,
     plugins: Vec<Arc<Plugin<S, E>>>,
     pub shared: Arc<Shared<S>>,
@@ -86,10 +88,12 @@ pub struct Pemmican<S: Send + Sync, E>
 impl<S: Send + Sync + 'static, E: Send + Sync + StdError + 'static> Pemmican<S, E>
 {
     /// Create a new pemmican server instance
-    pub fn new(config: Config, initial_state: S) -> Pemmican<S, E> {
+    pub fn new(config: Config, router: Box<Router<S, E>>, initial_state: S)
+               -> Pemmican<S, E>
+    {
         let num_threads = config.num_threads;
         Pemmican {
-            routes: CHashMap::new(),
+            router: router,
             config: config,
             plugins: Vec::new(),
             shared: Arc::new(Shared {
@@ -97,13 +101,6 @@ impl<S: Send + Sync + 'static, E: Send + Sync + StdError + 'static> Pemmican<S, 
                 state: initial_state,
             })
         }
-    }
-
-    /// Add a route to the server.  Routes map a path and method onto a handler.
-    /// Currently, all routes must be defined and added prior to running the server.
-    pub fn add_route(&mut self, path: &str, method: Method, handler: Handler<S, E>)
-    {
-        self.routes.insert( (path.to_owned(),method), handler );
     }
 
     /// Plug in a plugin.
@@ -131,13 +128,6 @@ impl<S: Send + Sync + 'static, E: Send + Sync + StdError + 'static> Pemmican<S, 
     }
 }
 
-impl<S: Send + Sync + Default + 'static, E: Send + Sync + StdError + 'static> Default for Pemmican<S, E>
-{
-    fn default() -> Self {
-        Self::new(Config::default(), S::default())
-    }
-}
-
 impl<S: Send + Sync + 'static, E: Send + Sync + StdError + 'static> Service for Pemmican<S, E>
 {
     type Request = Request;
@@ -146,13 +136,8 @@ impl<S: Send + Sync + 'static, E: Send + Sync + StdError + 'static> Service for 
     type Future = Box<Future<Item = Self::Response, Error = Self::Error>>;
 
     fn call(&self, mut req: Request) -> Self::Future {
-        // FIXME: we are cloning these due to HashMap get requiring a reference
-        // and the issues with borrowing. Research ways to avoid this.
-        let path = req.path().to_owned();
-        let method: Method = req.method().clone();
 
-        if let Some(handler) = self.routes.get_mut( &(path,method) ) {
-
+        if let Some(handler) = self.router.get_handler(req.path(), req.method()) {
             // Run plugins before_handlers
             for m in &self.plugins {
                 m.before_handler(&mut req);
@@ -180,7 +165,6 @@ impl<S: Send + Sync + 'static, E: Send + Sync + StdError + 'static> Service for 
 
             // Map the future back to just a response
             let fut = Box::new( fut.map(|plugin_data| plugin_data.response) );
-
             // Map the error back to hyper error
             // FIXME: once hyper deals with issue #1128 (slated for 0.12), rework
             // this code.

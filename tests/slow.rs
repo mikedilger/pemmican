@@ -3,10 +3,22 @@ extern crate pemmican;
 extern crate hyper;
 extern crate futures;
 
-use pemmican::{Pemmican, Config};
+use pemmican::{Pemmican, Config, Router, Handler};
 use hyper::server::{Request, Response};
 use hyper::Method;
 use futures::Future;
+
+// Define and implement a static router
+struct MyRouter;
+impl Router<(), ::std::io::Error> for MyRouter
+{
+    fn get_handler(&self, path: &str, method: &Method) -> Option<Handler<(), ::std::io::Error>> {
+        match (path, method) {
+            ("/", &Method::Get) => Some(home),
+            _ => None,
+        }
+    }
+}
 
 // This is our home page handler
 fn home(pemmican: &Pemmican<(), ::std::io::Error>, _request: &Request)
@@ -29,10 +41,7 @@ fn home(pemmican: &Pemmican<(), ::std::io::Error>, _request: &Request)
 fn main()
 {
     // Create pemmican
-    let mut pemmican = Pemmican::new( Config::default(), () );
-
-    // Setup our route
-    pemmican.add_route("/", Method::Get, home);
+    let pemmican = Pemmican::new( Config::default(), Box::new(MyRouter), () );
 
     // And run the server
     let _ = pemmican.run("127.0.0.1:3000",

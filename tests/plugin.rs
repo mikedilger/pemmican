@@ -4,11 +4,23 @@ extern crate hyper;
 extern crate futures;
 
 use std::sync::Arc;
-use pemmican::{Pemmican, Config};
+use pemmican::{Pemmican, Config, Router, Handler};
 use pemmican::plugins::PageVisits;
 use hyper::server::{Request, Response};
 use hyper::Method;
 use futures::Future;
+
+// Define and implement a static router
+struct MyRouter;
+impl Router<State, ::std::io::Error> for MyRouter
+{
+    fn get_handler(&self, path: &str, method: &Method) -> Option<Handler<State, ::std::io::Error>> {
+        match (path, method) {
+            ("/", &Method::Get) => Some(home),
+            _ => None,
+        }
+    }
+}
 
 struct State {
     page_visits: Arc<PageVisits>,
@@ -47,13 +59,10 @@ fn main()
     };
 
     // Create pemmican, giving it the shared state object
-    let mut pemmican = Pemmican::new( Config::default(), state );
+    let mut pemmican = Pemmican::new( Config::default(), Box::new(MyRouter), state );
 
     // Plug-in the plugin
     pemmican.plug_in( page_visits.clone() );
-
-    // Setup our route
-    pemmican.add_route("/", Method::Get, home);
 
     // And run the server
     let _ = pemmican.run("127.0.0.1:3000",
