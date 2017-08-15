@@ -21,7 +21,7 @@ multiple times before it settles down.
 
 ## Overview
 
-Pemmican is
+Pemmican is (or should be, once the issues are fixed)
 * fast (rust)
 * parallel (thread pool)
 * asynchronous (hyper 0.11 w/ futures)
@@ -38,7 +38,8 @@ and C++).
 We attempt to minimize memory allocation, eschew blocking I/O, and try to use the fastest
 algorithms available.  This is an ongoing effort.
 
-Performance testing remains to be done.
+Performance testing remains to be done.  Initial performance testing shows pemmican to be
+very slow, and an issue is raised for this.  The cause is still unknown.
 
 ### Pemmican is parallel
 
