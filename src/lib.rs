@@ -171,11 +171,12 @@ impl<S, E> Service for Pemmican<S, E>
 
             // Map the future back to just a response
             let fut = Box::new( fut.map(|plugin_data| plugin_data.response) );
-            // Map the error back to hyper error
-            // FIXME: once hyper deals with issue #1128 (slated for 0.12), rework
-            // this code.
-            Box::new( fut.map_err(|e| {
-                hyper::Error::Io(::std::io::Error::new(::std::io::ErrorKind::Other, e))
+
+            // any errors that remain are logged and InternalServerError
+            // is returned to the client
+            Box::new( fut.or_else(|e| {
+                error!("error: {}", e);
+                future::ok(Response::new().with_status(StatusCode::InternalServerError))
             }))
         } else {
             Box::new(future::ok(
