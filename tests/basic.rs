@@ -3,40 +3,46 @@ extern crate pemmican;
 extern crate hyper;
 extern crate futures;
 
-use pemmican::{Pemmican, Config, Router, Handler};
-use hyper::server::{Request, Response};
-use hyper::Method;
+use std::io::Error as IoError;
+use std::sync::Arc;
 use futures::Future;
+use hyper::{Method, StatusCode};
+use hyper::server::Response;
+use pemmican::{Pemmican, Config, PluginData, Plugin};
 
-// Define and implement a static router
+// This is the static router
 struct MyRouter;
-impl Router<(), ::std::io::Error> for MyRouter
-{
-    fn get_handler(&self, path: &str, method: &Method) -> Option<Handler<(), ::std::io::Error>> {
-        match (path, method) {
-            ("/", &Method::Get) => Some(home),
-            _ => None,
+impl Plugin<(),IoError> for MyRouter {
+    fn handle(&self, mut data: PluginData<()>)
+              -> Box<Future<Item = PluginData<()>, Error = IoError>>
+    {
+        match (data.request.path(), data.request.method()) {
+            ("/", &Method::Get) => home(data),
+            _ => {
+                data.response.set_status(StatusCode::NotFound);
+                Box::new(futures::future::ok( data ))
+            }
         }
     }
 }
 
 // This is our home page handler
-fn home(_pemmican: &Pemmican<(), ::std::io::Error>, _request: &Request)
-         -> Box<Future<Item = Response, Error = ::std::io::Error>>
+fn home(mut data: PluginData<()>)
+        -> Box<Future<Item = PluginData<()>, Error = IoError>>
 {
-    Box::new(
-        futures::future::ok(
-            Response::new().with_body(
-                format!("Hello World!"))
-        )
-    )
+    data.response = Response::new().with_body(format!("Hello World!"));
+    Box::new(futures::future::ok( data ))
 }
 
 #[test]
 fn main()
 {
     // Create pemmican
-    let pemmican = Pemmican::new( Config::default(), Box::new(MyRouter), () );
+    let pemmican = Pemmican::new(
+        Config::default(),
+        vec![Arc::new(Box::new(MyRouter))], // <-- plug in the router
+        ()
+    );
 
     // And run the server
     let _ = pemmican.run("127.0.0.1:3000",

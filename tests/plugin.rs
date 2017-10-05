@@ -2,53 +2,58 @@
 extern crate pemmican;
 extern crate hyper;
 extern crate futures;
+extern crate chashmap;
 
+use std::io::Error as IoError;
 use std::sync::Arc;
-use pemmican::{Pemmican, Config, Router, Handler};
-use pemmican::plugins::PageVisits;
-use hyper::server::{Request, Response};
-use hyper::Method;
 use futures::Future;
-
-// Define and implement a static router
-struct MyRouter;
-impl Router<State, ::std::io::Error> for MyRouter
-{
-    fn get_handler(&self, path: &str, method: &Method) -> Option<Handler<State, ::std::io::Error>> {
-        match (path, method) {
-            ("/", &Method::Get) => Some(home),
-            _ => None,
-        }
-    }
-}
+use hyper::{Method, StatusCode};
+use pemmican::{Pemmican, Config, PluginData, Plugin};
+use pemmican::plugins::PageVisits;
 
 struct State {
     page_visits: Arc<PageVisits>,
 }
 
-// This is our home page handler
-fn home(pemmican: &Pemmican<State, ::std::io::Error>, request: &Request)
-        -> Box<Future<Item = Response, Error = ::std::io::Error>>
-{
-    Box::new(
-        futures::future::ok(
-            // Here we access the plugin in the shared state object
-            if let Some(c) = pemmican.shared.state.page_visits.get( request.uri().as_ref() )
-            {
-                Response::new().with_body(
-                    format!("This page has been accessed {} times.\n", c))
-            } else {
-                Response::new().with_body(
-                    format!("We dont know how many times this page has been accessed.\n"))
+// This is the static router
+struct MyRouter;
+impl Plugin<State,IoError> for MyRouter {
+    fn handle(&self, mut data: PluginData<State>)
+              -> Box<Future<Item = PluginData<State>, Error = IoError>>
+    {
+        match (data.request.path(), data.request.method()) {
+            ("/", &Method::Get) => home(data),
+            _ => {
+                data.response.set_status(StatusCode::NotFound);
+                Box::new(futures::future::ok( data ))
             }
-        )
-    )
+        }
+    }
+}
+
+// This is our home page handler
+fn home(mut data: PluginData<State>)
+        -> Box<Future<Item = PluginData<State>, Error = IoError>>
+{
+    // Here we access the plugin in the shared state object
+    if let Some(c) = data.shared.state.page_visits.get( data.request.uri().as_ref() )
+    {
+        data.response.set_body(
+            format!("This page has been accessed {} times.\n", c));
+    } else {
+        data.response.set_body(
+            format!("We dont know how many times this page has been accessed.\n"));
+    }
+
+    Box::new( futures::future::ok( data ) )
 }
 
 #[test]
 fn main()
 {
-    // Create the plugin
+    // Create the plugin.  We will have two references via an Arc: one to pass
+    // to pemmican as the plugin, and the other so that we can query the page
+    // count.
     let page_visits = Arc::new(PageVisits::new());
 
     // Create the shared state object
@@ -59,10 +64,16 @@ fn main()
     };
 
     // Create pemmican, giving it the shared state object
-    let mut pemmican = Pemmican::new( Config::default(), Box::new(MyRouter), state );
-
-    // Plug-in the plugin
-    pemmican.plug_in( page_visits.clone() );
+    // NOTE: We are passing in two routers: MyRouter and the 'page_visits' plugin.
+    //       That is how you plug in a plugin.
+    let pemmican = Pemmican::new(
+        Config::default(),
+        vec![
+            Arc::new(Box::new(page_visits)),
+            Arc::new(Box::new(MyRouter))
+        ],
+        state
+    );
 
     // And run the server
     let _ = pemmican.run("127.0.0.1:3000",
