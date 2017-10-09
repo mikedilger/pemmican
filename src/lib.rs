@@ -9,6 +9,8 @@ extern crate futures_cpupool;
 extern crate tokio_service;
 extern crate hyper;
 extern crate chashmap;
+#[macro_use]
+extern crate log;
 
 pub mod error;
 pub use error::Error;
