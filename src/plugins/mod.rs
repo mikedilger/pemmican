@@ -44,3 +44,6 @@ pub use self::router::{Router, Handler};
 
 pub mod page_visits;
 pub use self::page_visits::PageVisits;
+
+pub mod htdocs;
+pub use self::htdocs::Htdocs;
