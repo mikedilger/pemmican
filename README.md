@@ -12,12 +12,17 @@ the Rust language.
 
 ## Caveats and Warnings
 
-Pemmican is very new (it was started in June 2017), and is likely to undergo substantial
-changes. If you use it now, expect breaking changes. We expect it won't be generally useful
-until sometime after hyper 0.12 is released.
+Pemmican is still rather new (it was started in June 2017), and is likely to undergo
+substantial changes. If you use it now, expect breaking changes. We expect it won't be
+generally useful until at least version 0.4.
 
-The plugin architecture is especially new, quite limited at present, and very likely to break
-multiple times before it settles down.
+The plugin architecture is especially new, and very likely to break when we fix
+issue #8.
+
+Currently, request and response bodies must fit entirely in memory as they are not
+streamed.  This means pemmican is currently unsuitable for file uploads, for example.
+We intend to fix this in version 0.4, but we may need to wait for hyper 0.12 before
+we release 0.4.
 
 ## Overview
 
@@ -38,8 +43,12 @@ and C++).
 We attempt to minimize memory allocation, eschew blocking I/O, and try to use the fastest
 algorithms available.  This is an ongoing effort.
 
-Performance testing remains to be done.  Initial performance testing shows pemmican to be
-very slow, and an issue is raised for this.  The cause is still unknown.
+Very basic performance testing is getting me 9,633 requests per second using only 28% of
+the CPUs on an Intel(R) Xeon(R) CPU E3-1246 v3 @ 3.50GHz running Linux 4.12.13-1-ARCH.
+These were not real-world requests, but ideallized localhost requests serving a static
+"Hello World!" page handler.  This shows the core pathway is reasonably fast.
+
+Other non-core pathways are not fully optimized.
 
 ### Pemmican is parallel
 
@@ -92,6 +101,8 @@ Pemmican lets you share global state between your handlers, as long as it is
 [Example using a Plugin](tests/plugin.rs)
 
 [Example using DynamicRouter](tests/dynamic.rs)
+
+[Example using Htdocs](tests/htdocs.rs)
 
 ## Other similar crates
 
