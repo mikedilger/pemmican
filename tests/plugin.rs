@@ -64,8 +64,8 @@ fn main()
     };
 
     // Create pemmican, giving it the shared state object
-    // NOTE: We are passing in two routers: MyRouter and the 'page_visits' plugin.
-    //       That is how you plug in a plugin.
+    // NOTE: We are passing in two plugins: MyRouter and the 'page_visits' plugin.
+    //       That is how you "plug in" a plugin.
     let pemmican = Pemmican::new(
         Config::default(),
         vec![
