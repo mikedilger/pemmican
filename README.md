@@ -117,6 +117,10 @@ services:
 * As of July 2017, that is about it (there are 37 crates that depend on hyper 0.11,
   and it seems only these 4 try to be a web server)
 
+There is also tk-http, which is async http without hyper:
+
+* [tk-http](https://github.com/swindon-rs/tk-http)
+
 Additionally consider these more mature frameworks running on synchronous
 hyper:
 
