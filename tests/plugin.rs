@@ -44,6 +44,7 @@ fn home(mut data: PluginData<State>)
         data.response.set_body(
             format!("We dont know how many times this page has been accessed.\n"));
     }
+    data.response.set_status(StatusCode::Ok);
 
     Box::new( futures::future::ok( data ) )
 }

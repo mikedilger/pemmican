@@ -36,8 +36,8 @@ fn home(mut data: PluginData<()>)
             // are using it as a proxy for an actual non-blocking but long-running task,
             // for example purposes only.
             ::std::thread::sleep(::std::time::Duration::from_secs(3));
-            data.response.set_body(
-                "This response delayed 3 seconds.\n".to_owned());
+            data.response.set_body("This response delayed 3 seconds.\n".to_owned());
+            data.response.set_status(StatusCode::Ok);
             Ok(data)
         }))
 }

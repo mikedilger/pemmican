@@ -6,8 +6,7 @@ extern crate futures;
 use std::io::Error as IoError;
 use std::sync::Arc;
 use futures::Future;
-use hyper::Method;
-use hyper::server::Response;
+use hyper::{Method, StatusCode};
 use pemmican::{Pemmican, Config, PluginData};
 use pemmican::plugins::{Router, Htdocs};
 
@@ -15,7 +14,8 @@ use pemmican::plugins::{Router, Htdocs};
 fn home(mut data: PluginData<()>)
         -> Box<Future<Item = PluginData<()>, Error = IoError>>
 {
-    data.response = Response::new().with_body(format!("Hello World!"));
+    data.response.set_body(format!("Hello World!"));
+    data.response.set_status(StatusCode::Ok);
     Box::new(futures::future::ok( data ))
 }
 
