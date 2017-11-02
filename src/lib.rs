@@ -11,6 +11,8 @@ extern crate hyper;
 extern crate chashmap;
 #[macro_use]
 extern crate log;
+extern crate cookie;
+extern crate textnonce;
 
 pub mod error;
 pub use error::Error;
@@ -93,6 +95,7 @@ impl<S, E> Service for Pemmican<S, E>
             shared: self.shared.clone(),
             request: req,
             response: Response::new().with_status(StatusCode::NotFound),
+            session_id: None,
         };
 
         let mut fut: Box<Future<Item = PluginData<S>, Error = E>> =

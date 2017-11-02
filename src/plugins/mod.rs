@@ -10,6 +10,7 @@ pub struct PluginData<S>
     pub shared: Arc<Shared<S>>,
     pub request: Request,
     pub response: Response,
+    pub session_id: Option<String>,
 }
 
 /// A plugin provides a handler for a request.
@@ -47,3 +48,6 @@ pub use self::page_visits::PageVisits;
 
 pub mod htdocs;
 pub use self::htdocs::Htdocs;
+
+pub mod session;
+pub use self::session::Session;
