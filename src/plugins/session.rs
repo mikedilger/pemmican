@@ -75,6 +75,7 @@ impl<S,E,D> Plugin<S,E> for Session<D>
 
         // Create new session
         let key = TextNonce::new().into_string();
+        data.session_id = Some(key.clone());
 
         // Create new session data
         self.data.insert(key.clone(), D::default());
