@@ -6,6 +6,9 @@ use hyper::header::SetCookie;
 use cookie::Cookie;
 use textnonce::TextNonce;
 
+header! { (Dnt, "Dnt") => [String] }
+header! { (Tk, "Tk") => [String] }
+
 /// This plugin implements sessions. Sessions associate subsequent requests with
 /// earlier requests. Sessions are maintained automatically by always setting a
 /// cookie initially and finding it again on subsequent requests.
@@ -20,6 +23,7 @@ pub struct Session {
     cookie_name: String,
     secure: bool,
     http_only: bool,
+    respect_dnt_ad_absurdum: bool,
 }
 
 impl Session
@@ -37,7 +41,15 @@ impl Session
             cookie_name: cookie_name,
             secure: secure,
             http_only: http_only,
+            respect_dnt_ad_absurdum: false,
         }
+    }
+
+    /// If you set this, then clients setting the "DNT: 1" HTTP header will be unable
+    /// to get sessions (using a cookie and checking it later is, strictly speaking,
+    /// tracking).
+    pub fn respect_dnt_ad_absurdum(&mut self) {
+        self.respect_dnt_ad_absurdum = true;
     }
 }
 
@@ -47,6 +59,31 @@ impl<S,E> Plugin<S,E> for Session
     fn handle(&self, mut data: PluginData<S>)
               -> Box<Future<Item = PluginData<S>, Error = E>>
     {
+        if self.respect_dnt_ad_absurdum {
+            // Respect Dnt
+            let mut dnt = false;
+            if let Some(header) = data.request.headers().get::<Dnt>() {
+                match *header {
+                    Dnt(ref s) => {
+                        if &*s != "0" {
+                            dnt = true;
+                        }
+                    },
+                }
+            }
+            if dnt {
+                // The user has requested Do Not Track.  We strictly comply by removing
+                // any existing session and refusing to start one while this header is
+                // present
+                data.session_id = None;
+
+                // Set the Tk header, informing them that we are not tracking
+                data.response.headers_mut().set(Tk("N".to_owned()));
+
+                return Box::new(::futures::future::ok(data));
+            }
+        }
+
         let mut maybe_key: Option<String> = None;
         if let Some(cookie_header) = data.request.headers().get::<CookieHeader>() {
             if let Some(cookie_value) = cookie_header.get(&*self.cookie_name) {
