@@ -3,7 +3,6 @@ use futures::Future;
 use plugins::{Plugin, PluginData};
 use hyper::header::StrictTransportSecurity;
 use hyper::header::ReferrerPolicy;
-use hyper::header::ContentType;
 
 header! { (ContentSecurityPolicy, "Content-Security-Policy") => [String] }
 header! { (XContentTypeOptions, "X-Content-Type-Options") => [String] }
