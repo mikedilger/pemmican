@@ -51,3 +51,6 @@ pub use self::htdocs::Htdocs;
 
 pub mod session;
 pub use self::session::Session;
+
+pub mod good_citizen;
+pub use self::good_citizen::GoodCitizen;

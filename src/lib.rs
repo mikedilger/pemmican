@@ -7,6 +7,7 @@
 extern crate futures;
 extern crate futures_cpupool;
 extern crate tokio_service;
+#[macro_use]
 extern crate hyper;
 extern crate chashmap;
 #[macro_use]
