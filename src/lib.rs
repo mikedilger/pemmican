@@ -2,7 +2,7 @@
 
 //! Pemmican is a Web server library built on top of hyper for the Rust language.
 //!
-//! Introductory documentation is at https://github.com/mikedilger/pemmican
+//! Introductory documentation is at https://git.optcomp.nz/mikedilger/pemmican
 
 extern crate futures;
 extern crate futures_cpupool;
