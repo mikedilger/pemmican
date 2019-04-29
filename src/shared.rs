@@ -3,6 +3,7 @@ use futures_cpupool::CpuPool;
 
 /// A Shared component within Pemmican, accessible to plugins
 pub struct Shared<S>
+    where S: Send + Sync
 {
     pub pool: CpuPool,
     #[allow(dead_code)] // this is provided for handlers; this library does not use it
@@ -10,6 +11,7 @@ pub struct Shared<S>
 }
 
 impl<S> Shared<S>
+    where S: Send + Sync
 {
     pub fn new(num_threads: usize, state: S) -> Shared<S> {
         Shared {

@@ -8,6 +8,7 @@ extern crate futures;
 extern crate futures_cpupool;
 #[macro_use]
 extern crate hyper;
+extern crate http;
 extern crate chashmap;
 #[macro_use]
 extern crate log;
@@ -26,19 +27,19 @@ pub use shared::Shared;
 pub mod plugins;
 pub use plugins::{PluginData, Plugin};
 
-
-
 use std::error::Error as StdError;
 use std::sync::Arc;
 use futures::Future;
-use hyper::{Request, Response};
+use hyper::{Request, Response, Body};
 use hyper::server::Server;
 use hyper::service::Service;
+use http::response::Builder as ResponseBuilder;
 use hyper::StatusCode;
 
 
 /// A Pemmican server instance.
 pub struct Pemmican<S, E>
+    where S: Send + Sync
 {
     config: Config,
     pub shared: Arc<Shared<S>>,
@@ -46,7 +47,7 @@ pub struct Pemmican<S, E>
 }
 
 impl<S, E> Pemmican<S, E>
-    where S: 'static,
+    where S: Send + Sync + 'static,
           E: Send + Sync + StdError + 'static
 {
     /// Create a new pemmican server instance
@@ -63,51 +64,51 @@ impl<S, E> Pemmican<S, E>
         }
     }
 
-    /*
     /// Run the server.  It will run until the `shutdown_signal` future completes.
     /// You can use futures::future::empty() to run forever.
     pub fn run<F>(self, addr: &str, shutdown_signal: F) -> Result<(), Error>
         where F: Future<Item = (), Error = ()>
     {
         let keep_alive = self.config.keep_alive;
-        let shutdown_timeout = self.config.shutdown_timeout;
 
         let arcself = Arc::new(self);
         let addr = addr.parse()?;
-        let mut server = Http::new()
-            .keep_alive(keep_alive)
-            .bind(&addr, move|| Ok(arcself.clone()))?;
-        server.shutdown_timeout(shutdown_timeout);
-        server.run_until(shutdown_signal).map_err(From::from)
+        let mut server = Server::bind(&addr)
+            .http1_keepalive(keep_alive)
+            .serve(move|| self);
+
+        let graceful = server.with_graceful_shutdown(shutdown_signal);
+        hyper::rt::spawn(graceful);
+        Ok(())
     }
-*/
 }
 
-/*
-impl<S, E> Service for Pemmican<S, E>
-    where S: 'static,
+impl<S,E> Service for Pemmican<S, E>
+    where S: Send + Sync + 'static,
           E: Send + Sync + StdError + 'static
 {
-    type Request = Request;
-    type Response = Response;
+    type ReqBody = Body;
+    type ResBody = Body;
     type Error = ::hyper::Error;
-    type Future = Box<Future<Item = Self::Response, Error = Self::Error>>;
+    type Future = Box<Future<Item = Response<Self::ResBody>, Error = Self::Error>>;
 
-    fn call(&self, req: Request) -> Self::Future {
+    fn call(&mut self, req: Request<Self::ReqBody>) -> Self::Future {
 
         let data = PluginData {
             shared: self.shared.clone(),
             request: req,
-            response: Response::new().with_status(StatusCode::NotFound),
+            response_builder: ResponseBuilder::new(),
+            body: None,
             session_id: None,
         };
 
+        // Start with an 'ok' future
         let mut fut: Box<Future<Item = PluginData<S>, Error = E>> =
             Box::new(::futures::future::ok(data));
 
-        // Run plugin handlers
+        // Run plugin handlers (let them modify the future)
         for plugin in &self.plugins {
-            let plug = plugin.clone();
+            let plug = plugin.clone(); // TBD: try to avoid this clone
             fut = Box::new(
                 fut.and_then(move|data| {
                     plug.handle(data)
@@ -115,15 +116,34 @@ impl<S, E> Service for Pemmican<S, E>
             );
         }
 
-        // Map future back to just a response
-        let fut = Box::new( fut.map(|data| data.response) );
+        // Map the future back to just a response
+        let fut = Box::new( fut.map(|mut data| {
+            data.response_builder.body(
+                data.body.unwrap_or(Body::empty())
+            ).unwrap() // FIXME
+        }));
 
         // any errors that remain are logged and InternalServerError
         // is returned to the client
         Box::new( fut.or_else(|e| {
             error!("error: {}", e);
-            ::futures::future::ok(Response::new().with_status(StatusCode::InternalServerError))
+            let mut builder = ResponseBuilder::new();
+            builder.status(StatusCode::INTERNAL_SERVER_ERROR);
+            let response: Response<Self::ResBody> = builder.body(Body::empty()).unwrap();
+            ::futures::future::ok(response)
         }))
     }
 }
-*/
+
+// dummy impl, not sure why
+use futures::{Poll, Async};
+impl<S,E> Future for Pemmican<S, E>
+    where S: Send + Sync + 'static
+{
+    type Item = ();
+    type Error = E;
+
+    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
+        Poll::Ok(Async::Ready(()))
+    }
+}

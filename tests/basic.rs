@@ -15,10 +15,10 @@ impl Plugin<(),IoError> for MyRouter {
     fn handle(&self, mut data: PluginData<()>)
               -> Box<Future<Item = PluginData<()>, Error = IoError>>
     {
-        match (data.request.path(), data.request.method()) {
-            ("/", &Method::Get) => home(data),
+        match (data.request.uri().path(), data.request.method()) {
+            ("/", &Method::GET) => home(data),
             _ => {
-                data.response.set_status(StatusCode::NotFound);
+                data.response_builder.status(StatusCode::NOT_FOUND);
                 Box::new(futures::future::ok( data ))
             }
         }
@@ -29,8 +29,8 @@ impl Plugin<(),IoError> for MyRouter {
 fn home(mut data: PluginData<()>)
         -> Box<Future<Item = PluginData<()>, Error = IoError>>
 {
-    data.response.set_body(format!("Hello World!"));
-    data.response.set_status(StatusCode::Ok);
+    data.response_builder.body(format!("Hello World!"));
+    data.response_builder.status(StatusCode::OK);
     Box::new(futures::future::ok( data ))
 }
 

@@ -3,13 +3,16 @@ use std::sync::Arc;
 use std::ops::Deref;
 use futures::Future;
 use hyper::{Request, Response, Body};
+use http::response::Builder as ResponseBuilder;
 use Shared;
 
 pub struct PluginData<S>
+    where S: Send + Sync
 {
     pub shared: Arc<Shared<S>>,
     pub request: Request<Body>,
-    pub response: Response<Body>,
+    pub response_builder: ResponseBuilder,
+    pub body: Option<Body>,
     pub session_id: Option<String>,
 }
 
@@ -22,6 +25,7 @@ pub struct PluginData<S>
 /// error code and return a Response rather than returning an Error through the
 /// future.  However, either way works.
 pub trait Plugin<S,E>
+    where S: Send + Sync
 {
     fn handle(&self, data: PluginData<S>)
               -> Box<Future<Item = PluginData<S>, Error = E>>;
@@ -30,7 +34,8 @@ pub trait Plugin<S,E>
 /// Anything that dereferences into a Plugin also implements Plugin
 impl<S,E,R,T> Plugin<S,E> for T
     where T: Deref<Target = R>,
-          R: Plugin<S,E>
+          R: Plugin<S,E>,
+          S: Send + Sync
 {
     fn handle(&self, data: PluginData<S>)
               -> Box<Future<Item = PluginData<S>, Error = E>>
