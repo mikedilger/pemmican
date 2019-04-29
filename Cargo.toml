@@ -10,10 +10,9 @@ license = "MIT OR Apache-2.0"
 keywords = [ "webserver", "framework" ]
 
 [dependencies]
-hyper = "0.11"
+hyper = "0.12"
 futures = "0.1"
 futures-cpupool = "0.1"
-tokio-service = "0.1"
 chashmap = "2.2"
 log = "0.4"
 textnonce = "0.6"

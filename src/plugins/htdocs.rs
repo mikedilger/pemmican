@@ -4,7 +4,7 @@ use std::fs::File;
 use std::io::Read;
 use futures::Future;
 use hyper::{Method, StatusCode};
-use hyper::header::ContentLength;
+use hyper::header::CONTENT_LENGTH;
 use plugins::{Plugin, PluginData};
 
 /// This plugin serves static files from a document root.
@@ -92,8 +92,7 @@ impl<S,E> Plugin<S,E> for Htdocs
                             let mut buffer = Vec::new();
                             match f.read_to_end(&mut buffer) {
                                 Ok(count) => {
-                                    data.response.headers_mut().set::<ContentLength>(
-                                        ContentLength(count as u64));
+                                    data.response.headers_mut().insert(CONTENT_LENGTH, count);
                                     if data.request.method() != &Method::Head {
                                         data.response.set_body(buffer);
                                     }

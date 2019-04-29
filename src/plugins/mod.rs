@@ -2,14 +2,14 @@
 use std::sync::Arc;
 use std::ops::Deref;
 use futures::Future;
-use hyper::server::{Request, Response};
+use hyper::{Request, Response, Body};
 use Shared;
 
 pub struct PluginData<S>
 {
     pub shared: Arc<Shared<S>>,
-    pub request: Request,
-    pub response: Response,
+    pub request: Request<Body>,
+    pub response: Response<Body>,
     pub session_id: Option<String>,
 }
 
@@ -40,6 +40,7 @@ impl<S,E,R,T> Plugin<S,E> for T
 }
 
 
+/*
 pub mod router;
 pub use self::router::{Router, Handler};
 
@@ -54,3 +55,4 @@ pub use self::session::Session;
 
 pub mod good_citizen;
 pub use self::good_citizen::GoodCitizen;
+*/

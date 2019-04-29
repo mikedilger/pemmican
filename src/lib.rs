@@ -6,8 +6,6 @@
 
 extern crate futures;
 extern crate futures_cpupool;
-extern crate tokio_service;
-#[macro_use]
 extern crate hyper;
 extern crate chashmap;
 #[macro_use]
@@ -32,8 +30,8 @@ pub use plugins::{PluginData, Plugin};
 use std::error::Error as StdError;
 use std::sync::Arc;
 use futures::Future;
-use tokio_service::Service;
-use hyper::server::{Http, Request, Response};
+use hyper::{Request, Response, Body, Server};
+use hyper::service::Service;
 use hyper::StatusCode;
 
 
@@ -73,11 +71,15 @@ impl<S, E> Pemmican<S, E>
 
         let arcself = Arc::new(self);
         let addr = addr.parse()?;
-        let mut server = Http::new()
-            .keep_alive(keep_alive)
-            .bind(&addr, move|| Ok(arcself.clone()))?;
-        server.shutdown_timeout(shutdown_timeout);
-        server.run_until(shutdown_signal).map_err(From::from)
+        let mut server = Server::bind(&addr)
+            .http1_keepalive(keep_alive)
+            .serve(move|| Ok(arcself.clone()))?;
+        let graceful = server
+            .with_graceful_shutdown(shutdown_signal)
+            .map_err(From::from)?;
+        hyper::rt::spawn(graceful);
+//FIXME        server.shutdown_timeout(shutdown_timeout);
+//FIXME        server.run_until(shutdown_signal).map_err(From::from)
     }
 }
 
@@ -85,12 +87,12 @@ impl<S, E> Service for Pemmican<S, E>
     where S: 'static,
           E: Send + Sync + StdError + 'static
 {
-    type Request = Request;
-    type Response = Response;
+    type ReqBody = Body;
+    type ResBody = Body;
     type Error = ::hyper::Error;
-    type Future = Box<Future<Item = Self::Response, Error = Self::Error>>;
+    type Future = Box<Future<Item = Response<Self::ResBody>, Error = Self::Error>>;
 
-    fn call(&self, req: Request) -> Self::Future {
+    fn call(&mut self, req: Request<Self::ReqBody>) -> Self::Future {
 
         let data = PluginData {
             shared: self.shared.clone(),
