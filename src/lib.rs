@@ -6,7 +6,6 @@
 
 extern crate futures;
 extern crate futures_cpupool;
-extern crate tokio_service;
 #[macro_use]
 extern crate hyper;
 extern crate chashmap;
@@ -32,8 +31,9 @@ pub use plugins::{PluginData, Plugin};
 use std::error::Error as StdError;
 use std::sync::Arc;
 use futures::Future;
-use tokio_service::Service;
-use hyper::server::{Http, Request, Response};
+use hyper::{Request, Response};
+use hyper::server::Server;
+use hyper::service::Service;
 use hyper::StatusCode;
 
 
@@ -63,6 +63,7 @@ impl<S, E> Pemmican<S, E>
         }
     }
 
+    /*
     /// Run the server.  It will run until the `shutdown_signal` future completes.
     /// You can use futures::future::empty() to run forever.
     pub fn run<F>(self, addr: &str, shutdown_signal: F) -> Result<(), Error>
@@ -79,8 +80,10 @@ impl<S, E> Pemmican<S, E>
         server.shutdown_timeout(shutdown_timeout);
         server.run_until(shutdown_signal).map_err(From::from)
     }
+*/
 }
 
+/*
 impl<S, E> Service for Pemmican<S, E>
     where S: 'static,
           E: Send + Sync + StdError + 'static
@@ -123,3 +126,4 @@ impl<S, E> Service for Pemmican<S, E>
         }))
     }
 }
+*/
