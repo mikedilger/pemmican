@@ -27,9 +27,12 @@ pub use shared::Shared;
 pub mod plugins;
 pub use plugins::{PluginData, Plugin};
 
+mod never;
+use never::Never;
+
 use std::error::Error as StdError;
 use std::sync::Arc;
-use futures::Future;
+use futures::{Future, IntoFuture};
 use hyper::{Request, Response, Body};
 use hyper::server::Server;
 use hyper::service::Service;
@@ -89,7 +92,7 @@ impl<S,E> Service for Pemmican<S, E>
 {
     type ReqBody = Body;
     type ResBody = Body;
-    type Error = ::hyper::Error;
+    type Error = hyper::Error;
     type Future = Box<Future<Item = Response<Self::ResBody>, Error = Self::Error>>;
 
     fn call(&mut self, req: Request<Self::ReqBody>) -> Self::Future {
@@ -104,7 +107,7 @@ impl<S,E> Service for Pemmican<S, E>
 
         // Start with an 'ok' future
         let mut fut: Box<Future<Item = PluginData<S>, Error = E>> =
-            Box::new(::futures::future::ok(data));
+            Box::new(futures::future::ok(data));
 
         // Run plugin handlers (let them modify the future)
         for plugin in &self.plugins {
@@ -130,20 +133,18 @@ impl<S,E> Service for Pemmican<S, E>
             let mut builder = ResponseBuilder::new();
             builder.status(StatusCode::INTERNAL_SERVER_ERROR);
             let response: Response<Self::ResBody> = builder.body(Body::empty()).unwrap();
-            ::futures::future::ok(response)
+            futures::future::ok(response)
         }))
     }
 }
 
-// dummy impl, not sure why
-use futures::{Poll, Async};
-impl<S,E> Future for Pemmican<S, E>
-    where S: Send + Sync + 'static
+impl <S, E> IntoFuture for Pemmican<S, E>
+    where S: Send + Sync
 {
-    type Item = ();
-    type Error = E;
-
-    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
-        Poll::Ok(Async::Ready(()))
+    type Future = futures::future::FutureResult<Self::Item, Self::Error>;
+    type Item = Self;
+    type Error = Never;
+    fn into_future(self) -> Self::Future {
+        futures::future::ok(self)
     }
 }
