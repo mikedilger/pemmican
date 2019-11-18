@@ -38,7 +38,7 @@ impl<S,E> Plugin<S,E> for Htdocs
           E: Send + 'static
 {
     fn handle(&self, mut data: PluginData<S>)
-        -> Box<Future<Item = PluginData<S>, Error = E>>
+        -> Box<dyn Future<Item = PluginData<S>, Error = E>>
     {
         // Only handle GET and HEAD requests
         match data.request.method() {

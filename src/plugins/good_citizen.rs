@@ -109,7 +109,7 @@ impl<S,E> Plugin<S,E> for GoodCitizen
     where S: 'static, E: 'static
 {
     fn handle(&self, mut data: PluginData<S>)
-              -> Box<Future<Item = PluginData<S>, Error = E>>
+              -> Box<dyn Future<Item = PluginData<S>, Error = E>>
     {
         if let Some(ref sts) = self.strict_transport_security {
             data.response.headers_mut().set(sts.clone());

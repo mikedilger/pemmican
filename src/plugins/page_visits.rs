@@ -30,7 +30,7 @@ impl<S,E> Plugin<S,E> for PageVisits
     where S: 'static, E: 'static
 {
     fn handle(&self, data: PluginData<S>)
-              -> Box<Future<Item = PluginData<S>, Error = E>>
+              -> Box<dyn Future<Item = PluginData<S>, Error = E>>
     {
         // Update the visit count
         let url_path: String = data.request.path().to_owned();

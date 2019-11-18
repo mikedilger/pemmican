@@ -57,7 +57,7 @@ impl<S,E> Plugin<S,E> for Session
     where S: 'static, E: 'static
 {
     fn handle(&self, mut data: PluginData<S>)
-              -> Box<Future<Item = PluginData<S>, Error = E>>
+              -> Box<dyn Future<Item = PluginData<S>, Error = E>>
     {
         if self.respect_dnt_ad_absurdum {
             // Respect Dnt

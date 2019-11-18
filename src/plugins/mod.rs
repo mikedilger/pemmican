@@ -24,7 +24,7 @@ pub struct PluginData<S>
 pub trait Plugin<S,E>
 {
     fn handle(&self, data: PluginData<S>)
-              -> Box<Future<Item = PluginData<S>, Error = E>>;
+              -> Box<dyn Future<Item = PluginData<S>, Error = E>>;
 }
 
 /// Anything that dereferences into a Plugin also implements Plugin
@@ -33,7 +33,7 @@ impl<S,E,R,T> Plugin<S,E> for T
           R: Plugin<S,E>
 {
     fn handle(&self, data: PluginData<S>)
-              -> Box<Future<Item = PluginData<S>, Error = E>>
+              -> Box<dyn Future<Item = PluginData<S>, Error = E>>
     {
         self.deref().handle(data)
     }

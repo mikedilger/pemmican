@@ -42,7 +42,7 @@ pub struct Pemmican<S, E>
 {
     config: Config,
     pub shared: Arc<Shared<S>>,
-    pub plugins: Vec<Arc<Box<Plugin<S, E>>>>,
+    pub plugins: Vec<Arc<Box<dyn Plugin<S, E>>>>,
 }
 
 impl<S, E> Pemmican<S, E>
@@ -51,7 +51,7 @@ impl<S, E> Pemmican<S, E>
 {
     /// Create a new pemmican server instance
     pub fn new(config: Config,
-               plugins: Vec<Arc<Box<Plugin<S, E>>>>,
+               plugins: Vec<Arc<Box<dyn Plugin<S, E>>>>,
                initial_state: S)
                -> Pemmican<S, E>
     {
@@ -88,7 +88,7 @@ impl<S, E> Service for Pemmican<S, E>
     type Request = Request;
     type Response = Response;
     type Error = ::hyper::Error;
-    type Future = Box<Future<Item = Self::Response, Error = Self::Error>>;
+    type Future = Box<dyn Future<Item = Self::Response, Error = Self::Error>>;
 
     fn call(&self, req: Request) -> Self::Future {
 
@@ -99,7 +99,7 @@ impl<S, E> Service for Pemmican<S, E>
             session_id: None,
         };
 
-        let mut fut: Box<Future<Item = PluginData<S>, Error = E>> =
+        let mut fut: Box<dyn Future<Item = PluginData<S>, Error = E>> =
             Box::new(::futures::future::ok(data));
 
         // Run plugin handlers

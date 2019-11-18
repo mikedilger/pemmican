@@ -6,7 +6,7 @@ use chashmap::CHashMap;
 use plugins::{Plugin, PluginData};
 
 pub type Handler<S, E> = fn(data: PluginData<S>)
-                            -> Box<Future<Item = PluginData<S>, Error = E>>;
+                            -> Box<dyn Future<Item = PluginData<S>, Error = E>>;
 
 pub struct Router<S, E> {
     routes: CHashMap<(String, Method), Handler<S,E>>,
@@ -40,7 +40,7 @@ impl<S,E> Plugin<S,E> for Router<S,E>
           E: 'static
 {
     fn handle(&self, data: PluginData<S>)
-              -> Box<Future<Item = PluginData<S>, Error = E>>
+              -> Box<dyn Future<Item = PluginData<S>, Error = E>>
     {
         let path = data.request.path().to_owned();
         let method = data.request.method().clone();
