@@ -10,6 +10,13 @@
 Pemmican is a Web server library built in top of [hyper](https://hyper.rs) for
 the Rust language.
 
+THIS CRATE WILL PROBABLY NOT BE FURTHER DEVELOPED. There are plenty of other people working
+in this space.  Consider using `warp` instead, or something like it (I honestly can't keep
+track of which crate is the frontrunner in this space).
+
+The prior README contents remain below, but are out of date.
+
+
 ## Caveats and Warnings
 
 Pemmican is still rather new (it was started in June 2017), and is likely to undergo
