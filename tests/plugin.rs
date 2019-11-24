@@ -19,7 +19,7 @@ struct State {
 struct MyRouter;
 impl Plugin<State,IoError> for MyRouter {
     fn handle(&self, mut data: PluginData<State>)
-              -> Box<Future<Item = PluginData<State>, Error = IoError>>
+              -> Box<dyn Future<Item = PluginData<State>, Error = IoError>>
     {
         match (data.request.path(), data.request.method()) {
             ("/", &Method::Get) => home(data),
@@ -33,7 +33,7 @@ impl Plugin<State,IoError> for MyRouter {
 
 // This is our home page handler
 fn home(mut data: PluginData<State>)
-        -> Box<Future<Item = PluginData<State>, Error = IoError>>
+        -> Box<dyn Future<Item = PluginData<State>, Error = IoError>>
 {
     // Here we access the plugin in the shared state object
     if let Some(c) = data.shared.state.page_visits.get( data.request.uri().as_ref() )

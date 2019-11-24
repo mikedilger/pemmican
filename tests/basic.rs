@@ -13,7 +13,7 @@ use pemmican::{Pemmican, Config, PluginData, Plugin};
 struct MyRouter;
 impl Plugin<(),IoError> for MyRouter {
     fn handle(&self, mut data: PluginData<()>)
-              -> Box<Future<Item = PluginData<()>, Error = IoError>>
+              -> Box<dyn Future<Item = PluginData<()>, Error = IoError>>
     {
         match (data.request.path(), data.request.method()) {
             ("/", &Method::Get) => home(data),
@@ -27,7 +27,7 @@ impl Plugin<(),IoError> for MyRouter {
 
 // This is our home page handler
 fn home(mut data: PluginData<()>)
-        -> Box<Future<Item = PluginData<()>, Error = IoError>>
+        -> Box<dyn Future<Item = PluginData<()>, Error = IoError>>
 {
     data.response.set_body(format!("Hello World!"));
     data.response.set_status(StatusCode::Ok);

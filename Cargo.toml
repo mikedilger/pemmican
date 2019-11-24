@@ -8,6 +8,7 @@ repository = "https://github.com/mikedilger/pemmican"
 documentation = "https://docs.rs/pemmican"
 license = "MIT OR Apache-2.0"
 keywords = [ "webserver", "framework" ]
+edition = "2018"
 
 [dependencies]
 hyper = "0.11"

@@ -1,6 +1,6 @@
 
 use futures::Future;
-use plugins::{Plugin, PluginData};
+use crate::plugins::{Plugin, PluginData};
 use hyper::header::StrictTransportSecurity;
 use hyper::header::ReferrerPolicy;
 

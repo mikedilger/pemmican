@@ -1,7 +1,7 @@
 
 use futures::Future;
 use chashmap::CHashMap;
-use plugins::{Plugin, PluginData};
+use crate::plugins::{Plugin, PluginData};
 
 /// This plugin counts page visits.  It counts visits to every URL accessed,
 /// whether the URL is valid or not.  This router can be placed anywhere in

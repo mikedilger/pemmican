@@ -3,7 +3,7 @@ use std::ops::Deref;
 use futures::Future;
 use hyper::Method;
 use chashmap::CHashMap;
-use plugins::{Plugin, PluginData};
+use crate::plugins::{Plugin, PluginData};
 
 pub type Handler<S, E> = fn(data: PluginData<S>)
                             -> Box<dyn Future<Item = PluginData<S>, Error = E>>;

@@ -1,6 +1,6 @@
 
 use futures::Future;
-use plugins::{Plugin, PluginData};
+use crate::plugins::{Plugin, PluginData};
 use hyper::header::Cookie as CookieHeader;
 use hyper::header::SetCookie;
 use cookie::Cookie;

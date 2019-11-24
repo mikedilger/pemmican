@@ -5,7 +5,7 @@ use std::io::Read;
 use futures::Future;
 use hyper::{Method, StatusCode};
 use hyper::header::ContentLength;
-use plugins::{Plugin, PluginData};
+use crate::plugins::{Plugin, PluginData};
 
 /// This plugin serves static files from a document root.
 ///

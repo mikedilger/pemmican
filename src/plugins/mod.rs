@@ -3,7 +3,7 @@ use std::sync::Arc;
 use std::ops::Deref;
 use futures::Future;
 use hyper::server::{Request, Response};
-use Shared;
+use crate::Shared;
 
 pub struct PluginData<S>
 {

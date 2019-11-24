@@ -4,28 +4,20 @@
 //!
 //! Introductory documentation is at https://git.optcomp.nz/mikedilger/pemmican
 
-extern crate futures;
-extern crate futures_cpupool;
-extern crate tokio_service;
-#[macro_use]
-extern crate hyper;
-extern crate chashmap;
-#[macro_use]
-extern crate log;
-extern crate cookie;
-extern crate textnonce;
+#[macro_use] extern crate hyper;
+#[macro_use] extern crate log;
 
 pub mod error;
-pub use error::Error;
+pub use crate::error::Error;
 
 pub mod config;
-pub use config::Config;
+pub use crate::config::Config;
 
 pub mod shared;
-pub use shared::Shared;
+pub use crate::shared::Shared;
 
 pub mod plugins;
-pub use plugins::{PluginData, Plugin};
+pub use crate::plugins::{PluginData, Plugin};
 
 
 
