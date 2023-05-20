@@ -39,7 +39,7 @@ use std::error::Error as StdError;
 /// thread pool).
 pub type Handler<S, E> =
     fn(pemmican: &Pemmican<S, E>, &Request)
-       -> Box<Future<Item = Response, Error = E>>;
+       -> Box<dyn Future<Item = Response, Error = E>>;
 
 /// Configuration settings for a Pemmican server instance
 pub struct Config {
@@ -79,9 +79,9 @@ pub struct Shared<S: Send + Sync>
 /// A Pemmican server instance.
 pub struct Pemmican<S: Send + Sync, E>
 {
-    router: Box<Router<S, E>>,
+    router: Box<dyn Router<S, E>>,
     pub config: Config,
-    plugins: Vec<Arc<Plugin<S, E>>>,
+    plugins: Vec<Arc<dyn Plugin<S, E>>>,
     pub shared: Arc<Shared<S>>,
 }
 
@@ -90,13 +90,13 @@ impl<S, E> Pemmican<S, E>
           E: Send + Sync + StdError + 'static
 {
     /// Create a new pemmican server instance
-    pub fn new(config: Config, router: Box<Router<S, E>>, initial_state: S)
+    pub fn new(config: Config, router: Box<dyn Router<S, E>>, initial_state: S)
                -> Pemmican<S, E>
     {
         let num_threads = config.num_threads;
         Pemmican {
-            router: router,
-            config: config,
+            router,
+            config,
             plugins: Vec::new(),
             shared: Arc::new(Shared {
                 pool: CpuPool::new(num_threads),
@@ -107,7 +107,7 @@ impl<S, E> Pemmican<S, E>
 
     /// Plug in a plugin.
     /// Currently we have not yet implemented methods to order or re-order these.
-    pub fn plug_in(&mut self, plugin: Arc<Plugin<S, E>>)
+    pub fn plug_in(&mut self, plugin: Arc<dyn Plugin<S, E>>)
     {
         self.plugins.push(plugin);
     }
@@ -137,7 +137,7 @@ impl<S, E> Service for Pemmican<S, E>
     type Request = Request;
     type Response = Response;
     type Error = ::hyper::Error;
-    type Future = Box<Future<Item = Self::Response, Error = Self::Error>>;
+    type Future = Box<dyn Future<Item = Self::Response, Error = Self::Error>>;
 
     fn call(&self, mut req: Request) -> Self::Future {
 
@@ -150,14 +150,14 @@ impl<S, E> Service for Pemmican<S, E>
             let shared = self.shared.clone();
 
             // Call the handler
-            let mut fut: Box<Future<Item = PluginData<S>, Error = E>> =
+            let mut fut: Box<dyn Future<Item = PluginData<S>, Error = E>> =
                 Box::new(
                     (handler)(self, &req)
                         .map(move |response| {
                             PluginData {
-                                shared: shared,
+                                shared,
                                 request: req,
-                                response: response,
+                                response,
                             }
                         })
                 );

@@ -28,7 +28,7 @@ struct State {
 
 // This is our home page handler
 fn home(pemmican: &Pemmican<State, ::std::io::Error>, request: &Request)
-        -> Box<Future<Item = Response, Error = ::std::io::Error>>
+        -> Box<dyn Future<Item = Response, Error = ::std::io::Error>>
 {
     Box::new(
         futures::future::ok(

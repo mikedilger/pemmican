@@ -22,7 +22,7 @@ impl Router<(), ::std::io::Error> for MyRouter
 
 // This is our home page handler
 fn home(pemmican: &Pemmican<(), ::std::io::Error>, _request: &Request)
-        -> Box<Future<Item = Response, Error = ::std::io::Error>>
+        -> Box<dyn Future<Item = Response, Error = ::std::io::Error>>
 {
     Box::new(
         pemmican.shared.pool.spawn_fn(|| Ok( {

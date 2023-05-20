@@ -36,8 +36,8 @@ impl<S: Send + Sync + 'static, E: 'static> Plugin<S,E> for PageVisits {
     }
 
     fn after_handler(&self,
-                     future: Box<Future<Item = PluginData<S>, Error = E>>)
-                     -> Box<Future<Item = PluginData<S>, Error = E>>
+                     future: Box<dyn Future<Item = PluginData<S>, Error = E>>)
+                     -> Box<dyn Future<Item = PluginData<S>, Error = E>>
     {
         // We do nothing here
         future

@@ -23,8 +23,8 @@ pub trait Plugin<S: Send + Sync + 'static, E: 'static>: Send + Sync
     /// future, returning the modified future, (e.g. perhaps using and_then)
     /// This potentially modifies the Response (available through the `data` parameter).
     fn after_handler(&self,
-                     future: Box<Future<Item = PluginData<S>, Error = E>>)
-                     -> Box<Future<Item = PluginData<S>, Error = E>>;
+                     future: Box<dyn Future<Item = PluginData<S>, Error = E>>)
+                     -> Box<dyn Future<Item = PluginData<S>, Error = E>>;
 }
 
 impl<'a, S: Send + Sync + 'static, E: 'static, T: Send + Sync + Plugin<S,E>>
@@ -36,8 +36,8 @@ impl<'a, S: Send + Sync + 'static, E: 'static, T: Send + Sync + Plugin<S,E>>
     }
 
     fn after_handler(&self,
-                     future: Box<Future<Item = PluginData<S>, Error = E>>)
-                     -> Box<Future<Item = PluginData<S>, Error = E>>
+                     future: Box<dyn Future<Item = PluginData<S>, Error = E>>)
+                     -> Box<dyn Future<Item = PluginData<S>, Error = E>>
     {
         (*self).after_handler(future)
     }

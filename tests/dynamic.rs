@@ -10,7 +10,7 @@ use futures::Future;
 
 // This is our home page handler
 fn home(_pemmican: &Pemmican<(), ::std::io::Error>, _request: &Request)
-         -> Box<Future<Item = Response, Error = ::std::io::Error>>
+         -> Box<dyn Future<Item = Response, Error = ::std::io::Error>>
 {
     Box::new(
         futures::future::ok(
